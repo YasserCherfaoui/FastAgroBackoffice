@@ -10,8 +10,6 @@ import Header from '../components/Header'
 
 import TanStackQueryDevtools from '../integrations/tanstack-query/devtools'
 
-import StoreDevtools from '../lib/demo-store-devtools'
-
 import appCss from '../styles.css?url'
 
 import type { QueryClient } from '@tanstack/react-query'
@@ -33,7 +31,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
         content: 'width=device-width, initial-scale=1',
       },
       {
-        title: 'TanStack Start Starter',
+        title: 'Fast Agro — Backoffice',
       },
     ],
     links: [
@@ -67,7 +65,6 @@ function RootDocument({ children }: { children: React.ReactNode }) {
               render: <TanStackRouterDevtoolsPanel />,
             },
             TanStackQueryDevtools,
-            StoreDevtools,
           ]}
         />
         <Scripts />

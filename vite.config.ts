@@ -8,7 +8,20 @@ import tailwindcss from '@tailwindcss/vite'
 
 const config = defineConfig({
   resolve: { tsconfigPaths: true },
-  plugins: [devtools(), tailwindcss(), tanstackStart(), viteReact()],
+  plugins: [
+    devtools(),
+    tailwindcss(),
+    tanstackStart({
+      // Emit a prerendered SPA shell so `dist/client/index.html` exists for static hosts (e.g. Vercel).
+      spa: {
+        enabled: true,
+        prerender: {
+          crawlLinks: true,
+        },
+      },
+    }),
+    viteReact(),
+  ],
 })
 
 export default config

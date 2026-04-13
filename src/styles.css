@@ -35,8 +35,9 @@
   --popover-foreground: oklch(0.141 0.005 285.823);
   --primary: oklch(0.21 0.006 285.885);
   --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.967 0.001 286.375);
-  --secondary-foreground: oklch(0.21 0.006 285.885);
+  /* Subtle gray surface; foreground must stay clearly darker for label contrast */
+  --secondary: oklch(0.91 0.014 200);
+  --secondary-foreground: oklch(0.22 0.045 200);
   --muted: oklch(0.967 0.001 286.375);
   --muted-foreground: oklch(0.552 0.016 285.938);
   --accent: oklch(0.967 0.001 286.375);
@@ -205,17 +206,6 @@ body::after {
   mask-image: radial-gradient(circle at 50% 30%, black, transparent 78%);
 }
 
-a {
-  color: var(--lagoon-deep);
-  text-decoration-color: rgba(50, 143, 151, 0.4);
-  text-decoration-thickness: 1px;
-  text-underline-offset: 2px;
-}
-
-a:hover {
-  color: #246f76;
-}
-
 code {
   font-size: 0.9em;
   border: 1px solid var(--line);
@@ -343,5 +333,21 @@ a {
   body {
     background-color: var(--background);
     color: var(--foreground);
+  }
+
+  /* Default in-content links — skip Button+Link and header .nav-link (lower specificity than :not(...) would beat .nav-link) */
+  a:not([data-slot="button"]):not(.nav-link) {
+    color: var(--lagoon-deep);
+    text-decoration-color: rgba(50, 143, 151, 0.4);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 2px;
+  }
+
+  a:not([data-slot="button"]):not(.nav-link):hover {
+    color: #246f76;
+  }
+
+  a[data-slot="button"] {
+    text-decoration: none;
   }
 }

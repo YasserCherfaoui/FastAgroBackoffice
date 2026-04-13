@@ -15,7 +15,8 @@ import {
 } from "#/components/ui/card"
 import { Input } from "#/components/ui/input"
 import { Label } from "#/components/ui/label"
-import { loginRequest, setAuthToken } from "#/lib/api"
+import { loginRequest, saveAuthSession } from "#/lib/api"
+import { redirectIfAuthenticated } from "#/lib/require-auth"
 
 const loginSchema = z.object({
   email: z.email({ message: "Enter a valid email address" }),
@@ -27,6 +28,10 @@ const loginSchema = z.object({
 type LoginFormValues = z.infer<typeof loginSchema>
 
 export const Route = createFileRoute("/login")({
+  ssr: false,
+  beforeLoad: () => {
+    redirectIfAuthenticated()
+  },
   component: LoginPage,
 })
 
@@ -45,8 +50,8 @@ function LoginPage() {
   const loginMutation = useMutation({
     mutationFn: loginRequest,
     onSuccess: (data) => {
-      setAuthToken(data.token)
-      navigate({ to: "/" })
+      saveAuthSession(data.token, data.user)
+      void navigate({ to: "/products" })
     },
   })
 

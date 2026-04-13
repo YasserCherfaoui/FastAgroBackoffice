@@ -37,6 +37,7 @@ const schema = z.object({
 type FormValues = z.infer<typeof schema>
 
 export const Route = createFileRoute("/products/$productId")({
+  ssr: false,
   beforeLoad: () => {
     redirectIfUnauthenticated()
   },

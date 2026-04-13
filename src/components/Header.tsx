@@ -1,8 +1,16 @@
-import { Link } from "@tanstack/react-router"
+import { useQueryClient } from "@tanstack/react-query"
+import { Link, useNavigate } from "@tanstack/react-router"
 
+import { Button } from "#/components/ui/button"
+import { clearAuthSession } from "#/lib/auth-session"
+import { useAuth } from "#/lib/use-auth"
 import ThemeToggle from "./ThemeToggle"
 
 export default function Header() {
+  const { isAuthenticated, user } = useAuth()
+  const navigate = useNavigate()
+  const queryClient = useQueryClient()
+
   return (
     <header className="sticky top-0 z-50 border-b border-[var(--line)] bg-[var(--header-bg)] px-4 backdrop-blur-lg">
       <nav className="page-wrap flex flex-wrap items-center gap-x-3 gap-y-2 py-3 sm:py-4">
@@ -20,21 +28,47 @@ export default function Header() {
           <ThemeToggle />
         </div>
 
-        <div className="order-3 flex w-full flex-wrap items-center gap-x-4 gap-y-1 pb-1 text-sm font-semibold sm:order-2 sm:w-auto sm:flex-nowrap sm:pb-0">
-          <Link
-            to="/products"
-            className="nav-link"
-            activeProps={{ className: "nav-link is-active" }}
-          >
-            Products
-          </Link>
-          <Link
-            to="/login"
-            className="nav-link"
-            activeProps={{ className: "nav-link is-active" }}
-          >
-            Sign in
-          </Link>
+        <div className="order-3 flex w-full flex-wrap items-center justify-end gap-x-4 gap-y-2 pb-1 text-sm font-semibold sm:order-2 sm:w-auto sm:flex-nowrap sm:pb-0">
+          {isAuthenticated ? (
+            <>
+              <Link
+                to="/products"
+                className="nav-link"
+                activeProps={{ className: "nav-link is-active" }}
+              >
+                Products
+              </Link>
+              {user?.email ? (
+                <span
+                  className="hidden max-w-[12rem] truncate text-xs font-normal text-[var(--sea-ink-soft)] sm:inline"
+                  title={user.email}
+                >
+                  {user.email}
+                </span>
+              ) : null}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="shrink-0"
+                onClick={() => {
+                  clearAuthSession()
+                  queryClient.clear()
+                  void navigate({ to: "/" })
+                }}
+              >
+                Sign out
+              </Button>
+            </>
+          ) : (
+            <Link
+              to="/login"
+              className="nav-link"
+              activeProps={{ className: "nav-link is-active" }}
+            >
+              Sign in
+            </Link>
+          )}
         </div>
       </nav>
     </header>

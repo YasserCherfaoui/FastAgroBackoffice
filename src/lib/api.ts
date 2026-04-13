@@ -1,3 +1,5 @@
+import { getAuthToken } from "#/lib/auth-session"
+
 const DEFAULT_API = "http://localhost:8080"
 
 export function getApiBaseUrl(): string {
@@ -36,13 +38,6 @@ export async function loginRequest(body: LoginRequest): Promise<LoginResponse> {
     throw new Error(err)
   }
   return data as LoginResponse
-}
-
-export const AUTH_TOKEN_KEY = "fastagro_auth_token"
-
-export function getAuthToken(): string | null {
-  if (typeof window === "undefined") return null
-  return window.localStorage.getItem(AUTH_TOKEN_KEY)
 }
 
 function authJsonHeaders(): HeadersInit {
@@ -176,12 +171,10 @@ export async function uploadProductImage(
   return data as ProductImage
 }
 
-export function setAuthToken(token: string): void {
-  if (typeof window === "undefined") return
-  window.localStorage.setItem(AUTH_TOKEN_KEY, token)
-}
-
-export function clearAuthToken(): void {
-  if (typeof window === "undefined") return
-  window.localStorage.removeItem(AUTH_TOKEN_KEY)
-}
+export {
+  AUTH_TOKEN_KEY,
+  clearAuthSession,
+  getAuthToken,
+  getAuthUser,
+  saveAuthSession,
+} from "#/lib/auth-session"

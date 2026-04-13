@@ -13,6 +13,7 @@ import { fetchProducts } from "#/lib/api"
 import { redirectIfUnauthenticated } from "#/lib/require-auth"
 
 export const Route = createFileRoute("/products/")({
+  ssr: false,
   beforeLoad: () => {
     redirectIfUnauthenticated()
   },

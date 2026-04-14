@@ -99,6 +99,9 @@ function ProductsPage() {
                         {p.images?.length
                           ? ` · ${p.images.length} image(s)`
                           : null}
+                        {p.specifications?.length
+                          ? ` · ${p.specifications.length} spec(s)`
+                          : null}
                       </p>
                     </div>
                     <Button asChild variant="outline" size="sm">

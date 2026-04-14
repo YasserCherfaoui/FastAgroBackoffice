@@ -1,6 +1,6 @@
 import { getAuthToken } from "#/lib/auth-session"
 
-const DEFAULT_API = "http://localhost:8080"
+const DEFAULT_API = "http://localhost:8180"
 
 export function getApiBaseUrl(): string {
   const url = import.meta.env.VITE_API_URL
@@ -82,6 +82,15 @@ export type ProductImage = {
   created_at: string
 }
 
+export type ProductSpecification = {
+  id: number
+  product_id: number
+  spec_key: string
+  spec_value: string
+  created_at: string
+  updated_at: string
+}
+
 export type Product = {
   id: number
   name: string
@@ -90,6 +99,7 @@ export type Product = {
   created_at: string
   updated_at: string
   images?: ProductImage[]
+  specifications?: ProductSpecification[]
 }
 
 export async function fetchProducts(): Promise<Product[]> {
@@ -112,6 +122,7 @@ export async function createProduct(body: {
   name: string
   description: string
   price_cents: number
+  specifications?: Array<{ key: string; value: string }>
 }): Promise<Product> {
   const res = await fetch(`${getApiBaseUrl()}/api/v1/products`, {
     method: "POST",
@@ -124,7 +135,12 @@ export async function createProduct(body: {
 
 export async function updateProduct(
   id: number,
-  body: { name: string; description: string; price_cents: number },
+  body: {
+    name: string
+    description: string
+    price_cents: number
+    specifications?: Array<{ id?: number; key: string; value: string }>
+  },
 ): Promise<Product> {
   const res = await fetch(`${getApiBaseUrl()}/api/v1/products/${id}`, {
     method: "PUT",
@@ -171,10 +187,71 @@ export async function uploadProductImage(
   return data as ProductImage
 }
 
+export async function fetchProductSpecifications(
+  productId: number,
+): Promise<ProductSpecification[]> {
+  const res = await fetch(
+    `${getApiBaseUrl()}/api/v1/products/${productId}/specifications`,
+    {
+      headers: authJsonHeaders(),
+    },
+  )
+  if (!res.ok) throw new Error(await readApiError(res))
+  return res.json() as Promise<ProductSpecification[]>
+}
+
+export async function createProductSpecification(
+  productId: number,
+  body: { key: string; value: string },
+): Promise<ProductSpecification> {
+  const res = await fetch(
+    `${getApiBaseUrl()}/api/v1/products/${productId}/specifications`,
+    {
+      method: "POST",
+      headers: authJsonHeaders(),
+      body: JSON.stringify(body),
+    },
+  )
+  if (!res.ok) throw new Error(await readApiError(res))
+  return res.json() as Promise<ProductSpecification>
+}
+
+export async function updateProductSpecification(
+  productId: number,
+  specId: number,
+  body: { key: string; value: string },
+): Promise<ProductSpecification> {
+  const res = await fetch(
+    `${getApiBaseUrl()}/api/v1/products/${productId}/specifications/${specId}`,
+    {
+      method: "PUT",
+      headers: authJsonHeaders(),
+      body: JSON.stringify(body),
+    },
+  )
+  if (!res.ok) throw new Error(await readApiError(res))
+  return res.json() as Promise<ProductSpecification>
+}
+
+export async function deleteProductSpecification(
+  productId: number,
+  specId: number,
+): Promise<void> {
+  const res = await fetch(
+    `${getApiBaseUrl()}/api/v1/products/${productId}/specifications/${specId}`,
+    {
+      method: "DELETE",
+      headers: authJsonHeaders(),
+    },
+  )
+  if (!res.ok) throw new Error(await readApiError(res))
+}
+
 export {
   AUTH_TOKEN_KEY,
   clearAuthSession,
   getAuthToken,
   getAuthUser,
-  saveAuthSession,
+  saveAuthSession
 } from "#/lib/auth-session"
+

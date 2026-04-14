@@ -1,7 +1,8 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router"
-import { useForm } from "react-hook-form"
+import { useEffect } from "react"
+import { useFieldArray, useForm } from "react-hook-form"
 import { z } from "zod"
 
 import { Button } from "#/components/ui/button"
@@ -16,6 +17,7 @@ import {
 import { Input } from "#/components/ui/input"
 import { Label } from "#/components/ui/label"
 import { Textarea } from "#/components/ui/textarea"
+import { useToast } from "#/components/ui/toast"
 import {
   deleteProduct,
   fetchProduct,
@@ -32,6 +34,36 @@ const schema = z.object({
     .min(1, "Price is required")
     .refine((v) => !Number.isNaN(Number.parseFloat(v)), "Invalid number")
     .refine((v) => Number.parseFloat(v) >= 0, "Must be zero or greater"),
+  specifications: z.array(
+    z.object({
+      id: z.number().optional(),
+      key: z.string(),
+      value: z.string(),
+    }),
+  ),
+}).superRefine((data, ctx) => {
+  const seen = new Set<string>()
+  data.specifications.forEach((spec, index) => {
+    const key = spec.key.trim()
+    if (key.length === 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["specifications", index, "key"],
+        message: "Key is required",
+      })
+      return
+    }
+    const normalized = key.toLowerCase()
+    if (seen.has(normalized)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["specifications", index, "key"],
+        message: "Duplicate key",
+      })
+      return
+    }
+    seen.add(normalized)
+  })
 })
 
 type FormValues = z.infer<typeof schema>
@@ -62,6 +94,7 @@ function EditProductPage() {
   const id = Number.parseInt(productId, 10)
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const { showToast } = useToast()
 
   const productQuery = useQuery({
     queryKey: ["product", id],
@@ -72,18 +105,32 @@ function EditProductPage() {
   const {
     register,
     handleSubmit,
+    control,
+    reset,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    values:
-      productQuery.data != null
-        ? {
-            name: productQuery.data.name,
-            description: productQuery.data.description,
-            price: (productQuery.data.price_cents / 100).toFixed(2),
-          }
-        : { name: "", description: "", price: "" },
+    defaultValues: { name: "", description: "", price: "", specifications: [] },
   })
+  const specsFieldArray = useFieldArray({
+    control,
+    name: "specifications",
+  })
+
+  useEffect(() => {
+    if (!productQuery.data) return
+    reset({
+      name: productQuery.data.name,
+      description: productQuery.data.description,
+      price: (productQuery.data.price_cents / 100).toFixed(2),
+      specifications:
+        productQuery.data.specifications?.map((spec) => ({
+          id: spec.id,
+          key: spec.spec_key,
+          value: spec.spec_value,
+        })) ?? [],
+    })
+  }, [productQuery.data, reset])
 
   const updateMutation = useMutation({
     mutationFn: (values: FormValues) => {
@@ -92,27 +139,53 @@ function EditProductPage() {
         name: values.name.trim(),
         description: values.description,
         price_cents,
+        specifications: values.specifications.map((spec) => ({
+          id: spec.id,
+          key: spec.key.trim(),
+          value: spec.value.trim(),
+        })),
       })
     },
     onSuccess: () => {
+      showToast("success", "Product updated successfully.")
       void queryClient.invalidateQueries({ queryKey: ["products"] })
       void queryClient.invalidateQueries({ queryKey: ["product", id] })
+    },
+    onError: (err) => {
+      showToast(
+        "error",
+        err instanceof Error ? err.message : "Failed to update product.",
+      )
     },
   })
 
   const deleteMutation = useMutation({
     mutationFn: () => deleteProduct(id),
     onSuccess: () => {
+      showToast("success", "Product deleted successfully.")
       void queryClient.invalidateQueries({ queryKey: ["products"] })
       void navigate({ to: "/products" })
+    },
+    onError: (err) => {
+      showToast(
+        "error",
+        err instanceof Error ? err.message : "Failed to delete product.",
+      )
     },
   })
 
   const uploadMutation = useMutation({
     mutationFn: (file: File) => uploadProductImage(id, file),
     onSuccess: () => {
+      showToast("success", "Image uploaded successfully.")
       void queryClient.invalidateQueries({ queryKey: ["product", id] })
       void queryClient.invalidateQueries({ queryKey: ["products"] })
+    },
+    onError: (err) => {
+      showToast(
+        "error",
+        err instanceof Error ? err.message : "Failed to upload image.",
+      )
     },
   })
 
@@ -194,6 +267,58 @@ function EditProductPage() {
                       {errors.price.message}
                     </p>
                   ) : null}
+                </div>
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <Label>Specifications</Label>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        specsFieldArray.append({
+                          id: undefined,
+                          key: "",
+                          value: "",
+                        })
+                      }
+                    >
+                      Add specification
+                    </Button>
+                  </div>
+                  {specsFieldArray.fields.length === 0 ? (
+                    <p className="text-xs text-[var(--sea-ink-soft)]">
+                      No specifications added.
+                    </p>
+                  ) : (
+                    <div className="space-y-3">
+                      {specsFieldArray.fields.map((field, index) => (
+                        <div key={field.id} className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
+                          <Input
+                            placeholder="Key (e.g. Weight)"
+                            aria-invalid={!!errors.specifications?.[index]?.key}
+                            {...register(`specifications.${index}.key`)}
+                          />
+                          <Input
+                            placeholder="Value (e.g. 5 kg)"
+                            {...register(`specifications.${index}.value`)}
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => specsFieldArray.remove(index)}
+                          >
+                            Remove
+                          </Button>
+                          {errors.specifications?.[index]?.key ? (
+                            <p className="text-destructive text-sm sm:col-span-3" role="alert">
+                              {errors.specifications[index]?.key?.message}
+                            </p>
+                          ) : null}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 {productQuery.data ? (
                   <p className="text-xs text-[var(--sea-ink-soft)]">

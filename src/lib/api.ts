@@ -102,12 +102,31 @@ export type Product = {
   specifications?: ProductSpecification[]
 }
 
-export async function fetchProducts(): Promise<Product[]> {
-  const res = await fetch(`${getApiBaseUrl()}/api/v1/products`, {
+export type PaginatedProductsResponse = {
+  items: Product[]
+  pagination: {
+    page: number
+    per_page: number
+    total_items: number
+    total_pages: number
+  }
+}
+
+export async function fetchProducts(params?: {
+  page?: number
+  perPage?: number
+}): Promise<PaginatedProductsResponse> {
+  const page = params?.page ?? 1
+  const perPage = params?.perPage ?? 12
+  const searchParams = new URLSearchParams({
+    page: String(page),
+    per_page: String(perPage),
+  })
+  const res = await fetch(`${getApiBaseUrl()}/api/v1/products?${searchParams}`, {
     headers: authJsonHeaders(),
   })
   if (!res.ok) throw new Error(await readApiError(res))
-  return res.json() as Promise<Product[]>
+  return res.json() as Promise<PaginatedProductsResponse>
 }
 
 export async function fetchProduct(id: number): Promise<Product> {

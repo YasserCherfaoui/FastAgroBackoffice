@@ -8,6 +8,14 @@ import tailwindcss from '@tailwindcss/vite'
 
 const config = defineConfig({
   resolve: { tsconfigPaths: true },
+  // Put the client bundle at dist/ (not dist/client/) so Vercel’s default Vite output dir finds index.html.
+  environments: {
+    client: {
+      build: {
+        outDir: 'dist',
+      },
+    },
+  },
   plugins: [
     devtools(),
     tailwindcss(),

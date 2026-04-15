@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router"
-import { Controller, useForm } from "react-hook-form"
+import { Controller, useForm, useWatch } from "react-hook-form"
 import { z } from "zod"
 
 import { Button } from "#/components/ui/button"
@@ -34,9 +34,30 @@ const schema = z.object({
   is_active: z.boolean(),
   icon_svg: z.string().max(100000, "SVG must be at most 100KB"),
   parent_id: z.string(),
+  color_hex: z
+    .string()
+    .refine(
+      (s) => {
+        const t = s.trim()
+        return t === "" || /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(t)
+      },
+      "Use #RGB or #RRGGBB (or leave empty)",
+    ),
 })
 
 type FormValues = z.infer<typeof schema>
+
+function hexForNativeColorInput(raw: string | undefined): string {
+  const t = (raw ?? "").trim()
+  if (/^#[0-9A-Fa-f]{6}$/i.test(t)) return t.toLowerCase()
+  if (/^#[0-9A-Fa-f]{3}$/i.test(t)) {
+    const r = t[1]!
+    const g = t[2]!
+    const b = t[3]!
+    return `#${r}${r}${g}${g}${b}${b}`.toLowerCase()
+  }
+  return "#90a4ae"
+}
 
 export const Route = createFileRoute("/categories/new")({
   ssr: false,
@@ -60,6 +81,7 @@ function NewCategoryPage() {
     register,
     control,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -70,9 +92,12 @@ function NewCategoryPage() {
       sort_order: "0",
       is_active: true,
       icon_svg: "",
+      color_hex: "",
       parent_id: "",
     },
   })
+
+  const colorHexWatch = useWatch({ control, name: "color_hex" })
 
   const mutation = useMutation({
     mutationFn: (values: FormValues) => {
@@ -87,6 +112,7 @@ function NewCategoryPage() {
         sort_order: Number.parseInt(values.sort_order, 10),
         is_active: values.is_active,
         icon_svg: values.icon_svg,
+        color_hex: values.color_hex.trim() || undefined,
         parent_id,
       })
     },
@@ -172,6 +198,40 @@ function NewCategoryPage() {
               <div className="flex flex-col gap-2">
                 <Label htmlFor="c-desc">Description</Label>
                 <Textarea id="c-desc" rows={3} {...register("description")} />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="c-color-text">Chip color</Label>
+                <p className="text-(--sea-ink-soft) m-0 text-xs">
+                  Hex color for the category chip on storefront product cards.
+                </p>
+                <div className="flex flex-wrap items-center gap-3">
+                  <input
+                    id="c-color"
+                    type="color"
+                    className="border-(--line) h-10 w-14 shrink-0 cursor-pointer rounded border bg-transparent p-0"
+                    aria-label="Pick chip color"
+                    value={hexForNativeColorInput(colorHexWatch)}
+                    onChange={(e) =>
+                      setValue("color_hex", e.target.value, {
+                        shouldValidate: true,
+                        shouldDirty: true,
+                      })
+                    }
+                  />
+                  <Input
+                    id="c-color-text"
+                    className="font-mono"
+                    placeholder="#1b5e20"
+                    autoComplete="off"
+                    aria-invalid={!!errors.color_hex}
+                    {...register("color_hex")}
+                  />
+                </div>
+                {errors.color_hex ? (
+                  <p className="text-destructive text-sm" role="alert">
+                    {errors.color_hex.message}
+                  </p>
+                ) : null}
               </div>
               <div className="flex flex-col gap-2">
                 <Label htmlFor="c-icon">Icon (SVG)</Label>

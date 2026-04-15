@@ -108,6 +108,7 @@ export type Category = {
   sort_order: number
   is_active: boolean
   icon_svg?: string
+  color_hex?: string
   parent_id?: number | null
   parent?: Category | null
   image_public_url?: string
@@ -163,6 +164,7 @@ export async function createCategory(body: {
   sort_order?: number
   is_active?: boolean
   icon_svg?: string
+  color_hex?: string
   parent_id?: number | null
 }): Promise<Category> {
   const res = await fetch(`${getApiBaseUrl()}/api/v1/categories`, {
@@ -183,6 +185,7 @@ export async function updateCategory(
     sort_order: number
     is_active: boolean
     icon_svg: string
+    color_hex?: string
     parent_id: number | null
   },
 ): Promise<Category> {

@@ -252,6 +252,7 @@ export type Product = {
   name: string
   description: string
   price_cents: number
+  best_seller: boolean
   category_id?: number | null
   category?: Category | null
   created_at: string
@@ -300,6 +301,7 @@ export async function createProduct(body: {
   name: string
   description: string
   price_cents: number
+  best_seller?: boolean
   category_id?: number | null
   specifications?: Array<{ key: string; value: string }>
 }): Promise<Product> {
@@ -318,6 +320,7 @@ export async function updateProduct(
     name: string
     description: string
     price_cents: number
+    best_seller: boolean
     category_id: number | null
     specifications?: Array<{ id?: number; key: string; value: string }>
   },

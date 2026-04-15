@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router"
-import { useFieldArray, useForm } from "react-hook-form"
+import { Controller, useFieldArray, useForm } from "react-hook-form"
 import { z } from "zod"
 
 import { Button } from "#/components/ui/button"
@@ -15,6 +15,7 @@ import {
 } from "#/components/ui/card"
 import { Input } from "#/components/ui/input"
 import { Label } from "#/components/ui/label"
+import { Switch } from "#/components/ui/switch"
 import { Textarea } from "#/components/ui/textarea"
 import { useToast } from "#/components/ui/toast"
 import { createProduct, fetchCategories } from "#/lib/api"
@@ -35,6 +36,7 @@ const schema = z.object({
     }),
   ),
   category_id: z.string(),
+  best_seller: z.boolean(),
 }).superRefine((data, ctx) => {
   const seen = new Set<string>()
   data.specifications.forEach((spec, index) => {
@@ -93,6 +95,7 @@ function NewProductPage() {
       price: "",
       specifications: [],
       category_id: "",
+      best_seller: false,
     },
   })
   const specsFieldArray = useFieldArray({
@@ -111,6 +114,7 @@ function NewProductPage() {
         name: values.name.trim(),
         description: values.description,
         price_cents,
+        best_seller: values.best_seller,
         category_id,
         specifications: values.specifications.map((spec) => ({
           key: spec.key.trim(),
@@ -201,6 +205,27 @@ function NewProductPage() {
                   </Link>
                   .
                 </p>
+              </div>
+              <div className="flex items-center justify-between gap-3 rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 py-2">
+                <div>
+                  <Label htmlFor="p-best-seller" className="cursor-pointer">
+                    Best seller
+                  </Label>
+                  <p className="mt-0.5 text-xs text-[var(--sea-ink-soft)]">
+                    Show on the storefront home “most ordered” section.
+                  </p>
+                </div>
+                <Controller
+                  name="best_seller"
+                  control={control}
+                  render={({ field }) => (
+                    <Switch
+                      id="p-best-seller"
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  )}
+                />
               </div>
               <div className="flex flex-col gap-2">
                 <Label htmlFor="p-price">Price (USD)</Label>

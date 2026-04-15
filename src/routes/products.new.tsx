@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router"
 import { useFieldArray, useForm } from "react-hook-form"
 import { z } from "zod"
@@ -17,7 +17,7 @@ import { Input } from "#/components/ui/input"
 import { Label } from "#/components/ui/label"
 import { Textarea } from "#/components/ui/textarea"
 import { useToast } from "#/components/ui/toast"
-import { createProduct } from "#/lib/api"
+import { createProduct, fetchCategories } from "#/lib/api"
 import { redirectIfUnauthenticated } from "#/lib/require-auth"
 
 const schema = z.object({
@@ -34,6 +34,7 @@ const schema = z.object({
       value: z.string(),
     }),
   ),
+  category_id: z.string(),
 }).superRefine((data, ctx) => {
   const seen = new Set<string>()
   data.specifications.forEach((spec, index) => {
@@ -73,6 +74,12 @@ function NewProductPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { showToast } = useToast()
+
+  const categoriesQuery = useQuery({
+    queryKey: ["categories", "options"],
+    queryFn: () => fetchCategories({ page: 1, perPage: 200 }),
+  })
+
   const {
     register,
     handleSubmit,
@@ -80,7 +87,13 @@ function NewProductPage() {
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { name: "", description: "", price: "", specifications: [] },
+    defaultValues: {
+      name: "",
+      description: "",
+      price: "",
+      specifications: [],
+      category_id: "",
+    },
   })
   const specsFieldArray = useFieldArray({
     control,
@@ -90,10 +103,15 @@ function NewProductPage() {
   const mutation = useMutation({
     mutationFn: (values: FormValues) => {
       const price_cents = Math.round(Number.parseFloat(values.price) * 100)
+      const category_id =
+        values.category_id === ""
+          ? null
+          : Number.parseInt(values.category_id, 10)
       return createProduct({
         name: values.name.trim(),
         description: values.description,
         price_cents,
+        category_id,
         specifications: values.specifications.map((spec) => ({
           key: spec.key.trim(),
           value: spec.value.trim(),
@@ -157,6 +175,32 @@ function NewProductPage() {
               <div className="flex flex-col gap-2">
                 <Label htmlFor="p-desc">Description</Label>
                 <Textarea id="p-desc" rows={4} {...register("description")} />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="p-category">Category</Label>
+                <select
+                  id="p-category"
+                  className="border-input bg-background ring-offset-background focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-xs outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  disabled={categoriesQuery.isLoading}
+                  {...register("category_id")}
+                >
+                  <option value="">No category</option>
+                  {(categoriesQuery.data?.items ?? []).map((c) => (
+                    <option key={c.id} value={String(c.id)}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-[var(--sea-ink-soft)]">
+                  Manage categories in{" "}
+                  <Link
+                    to="/categories"
+                    className="text-[var(--lagoon-deep)] font-medium underline-offset-2 hover:underline"
+                  >
+                    Categories
+                  </Link>
+                  .
+                </p>
               </div>
               <div className="flex flex-col gap-2">
                 <Label htmlFor="p-price">Price (USD)</Label>

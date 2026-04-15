@@ -20,6 +20,7 @@ import { Textarea } from "#/components/ui/textarea"
 import { useToast } from "#/components/ui/toast"
 import {
   deleteProduct,
+  fetchCategories,
   fetchProduct,
   updateProduct,
   uploadProductImage,
@@ -41,6 +42,7 @@ const schema = z.object({
       value: z.string(),
     }),
   ),
+  category_id: z.string(),
 }).superRefine((data, ctx) => {
   const seen = new Set<string>()
   data.specifications.forEach((spec, index) => {
@@ -102,6 +104,11 @@ function EditProductPage() {
     enabled: Number.isFinite(id),
   })
 
+  const categoriesQuery = useQuery({
+    queryKey: ["categories", "options"],
+    queryFn: () => fetchCategories({ page: 1, perPage: 200 }),
+  })
+
   const {
     register,
     handleSubmit,
@@ -110,7 +117,13 @@ function EditProductPage() {
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { name: "", description: "", price: "", specifications: [] },
+    defaultValues: {
+      name: "",
+      description: "",
+      price: "",
+      specifications: [],
+      category_id: "",
+    },
   })
   const specsFieldArray = useFieldArray({
     control,
@@ -123,6 +136,10 @@ function EditProductPage() {
       name: productQuery.data.name,
       description: productQuery.data.description,
       price: (productQuery.data.price_cents / 100).toFixed(2),
+      category_id:
+        productQuery.data.category_id != null
+          ? String(productQuery.data.category_id)
+          : "",
       specifications:
         productQuery.data.specifications?.map((spec) => ({
           id: spec.id,
@@ -135,10 +152,15 @@ function EditProductPage() {
   const updateMutation = useMutation({
     mutationFn: (values: FormValues) => {
       const price_cents = Math.round(Number.parseFloat(values.price) * 100)
+      const category_id =
+        values.category_id === ""
+          ? null
+          : Number.parseInt(values.category_id, 10)
       return updateProduct(id, {
         name: values.name.trim(),
         description: values.description,
         price_cents,
+        category_id,
         specifications: values.specifications.map((spec) => ({
           id: spec.id,
           key: spec.key.trim(),
@@ -253,6 +275,32 @@ function EditProductPage() {
                 <div className="flex flex-col gap-2">
                   <Label htmlFor="e-desc">Description</Label>
                   <Textarea id="e-desc" rows={4} {...register("description")} />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="e-category">Category</Label>
+                  <select
+                    id="e-category"
+                    className="border-input bg-background ring-offset-background focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-xs outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    disabled={categoriesQuery.isLoading}
+                    {...register("category_id")}
+                  >
+                    <option value="">No category</option>
+                    {(categoriesQuery.data?.items ?? []).map((c) => (
+                      <option key={c.id} value={String(c.id)}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-[var(--sea-ink-soft)]">
+                    Manage in{" "}
+                    <Link
+                      to="/categories"
+                      className="text-[var(--lagoon-deep)] font-medium underline-offset-2 hover:underline"
+                    >
+                      Categories
+                    </Link>
+                    .
+                  </p>
                 </div>
                 <div className="flex flex-col gap-2">
                   <Label htmlFor="e-price">Price (USD)</Label>

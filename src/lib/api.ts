@@ -111,6 +111,85 @@ export type Category = {
   updated_at: string
 }
 
+export type PaginatedCategoriesResponse = {
+  items: Category[]
+  pagination: {
+    page: number
+    per_page: number
+    total_items: number
+    total_pages: number
+  }
+}
+
+export async function fetchCategories(params?: {
+  page?: number
+  perPage?: number
+}): Promise<PaginatedCategoriesResponse> {
+  const page = params?.page ?? 1
+  const perPage = params?.perPage ?? 100
+  const searchParams = new URLSearchParams({
+    page: String(page),
+    per_page: String(perPage),
+  })
+  const res = await fetch(
+    `${getApiBaseUrl()}/api/v1/categories?${searchParams}`,
+    { headers: authJsonHeaders() },
+  )
+  if (!res.ok) throw new Error(await readApiError(res))
+  return res.json() as Promise<PaginatedCategoriesResponse>
+}
+
+export async function fetchCategory(id: number): Promise<Category> {
+  const res = await fetch(`${getApiBaseUrl()}/api/v1/categories/${id}`, {
+    headers: authJsonHeaders(),
+  })
+  if (!res.ok) throw new Error(await readApiError(res))
+  return res.json() as Promise<Category>
+}
+
+export async function createCategory(body: {
+  name: string
+  slug?: string
+  description?: string
+  sort_order?: number
+  is_active?: boolean
+}): Promise<Category> {
+  const res = await fetch(`${getApiBaseUrl()}/api/v1/categories`, {
+    method: "POST",
+    headers: authJsonHeaders(),
+    body: JSON.stringify(body),
+  })
+  if (!res.ok) throw new Error(await readApiError(res))
+  return res.json() as Promise<Category>
+}
+
+export async function updateCategory(
+  id: number,
+  body: {
+    name: string
+    slug: string
+    description?: string
+    sort_order: number
+    is_active: boolean
+  },
+): Promise<Category> {
+  const res = await fetch(`${getApiBaseUrl()}/api/v1/categories/${id}`, {
+    method: "PUT",
+    headers: authJsonHeaders(),
+    body: JSON.stringify(body),
+  })
+  if (!res.ok) throw new Error(await readApiError(res))
+  return res.json() as Promise<Category>
+}
+
+export async function deleteCategory(id: number): Promise<void> {
+  const res = await fetch(`${getApiBaseUrl()}/api/v1/categories/${id}`, {
+    method: "DELETE",
+    headers: authJsonHeaders(),
+  })
+  if (!res.ok) throw new Error(await readApiError(res))
+}
+
 /** Matches serverside `models.PricingTier`. */
 export type PricingTier = {
   id: number
@@ -177,6 +256,7 @@ export async function createProduct(body: {
   name: string
   description: string
   price_cents: number
+  category_id?: number | null
   specifications?: Array<{ key: string; value: string }>
 }): Promise<Product> {
   const res = await fetch(`${getApiBaseUrl()}/api/v1/products`, {
@@ -194,6 +274,7 @@ export async function updateProduct(
     name: string
     description: string
     price_cents: number
+    category_id: number | null
     specifications?: Array<{ id?: number; key: string; value: string }>
   },
 ): Promise<Product> {

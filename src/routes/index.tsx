@@ -41,12 +41,17 @@ function HomePage() {
           </CardHeader>
           <CardContent className="flex flex-wrap gap-3">
             {isAuthenticated ? (
-              <Button
-                asChild
-                className="bg-[var(--lagoon-deep)] text-white hover:bg-[var(--lagoon-deep)]/90"
-              >
-                <Link to="/products">Products</Link>
-              </Button>
+              <>
+                <Button
+                  asChild
+                  className="bg-[var(--lagoon-deep)] text-white hover:bg-[var(--lagoon-deep)]/90"
+                >
+                  <Link to="/products">Products</Link>
+                </Button>
+                <Button asChild variant="outline">
+                  <Link to="/categories">Categories</Link>
+                </Button>
+              </>
             ) : (
               <Button asChild variant="outline">
                 <Link to="/login">Sign in</Link>

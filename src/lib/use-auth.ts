@@ -3,6 +3,7 @@ import { useMemo, useSyncExternalStore } from "react"
 import {
   AUTH_USER_KEY,
   getAuthToken,
+  normalizeStoredUser,
   subscribeAuth,
   type StoredUser,
 } from "#/lib/auth-session"
@@ -30,17 +31,7 @@ export function useAuth(): AuthState {
     if (!rawUser) return null
     try {
       const parsed: unknown = JSON.parse(rawUser)
-      if (
-        typeof parsed === "object" &&
-        parsed !== null &&
-        "id" in parsed &&
-        "email" in parsed &&
-        "user_type" in parsed &&
-        typeof (parsed as { user_type: unknown }).user_type === "string" &&
-        typeof (parsed as StoredUser).email === "string"
-      ) {
-        return parsed as StoredUser
-      }
+      return normalizeStoredUser(parsed)
     } catch {
       /* ignore invalid session payloads */
     }

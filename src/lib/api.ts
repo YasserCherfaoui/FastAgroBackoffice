@@ -1,4 +1,4 @@
-import { getAuthToken } from "#/lib/auth-session"
+import { getAuthToken, type AuthUser } from "#/lib/auth-session"
 
 const DEFAULT_API = "http://localhost:8180"
 
@@ -17,11 +17,7 @@ export type LoginRequest = {
 
 export type LoginResponse = {
   token: string
-  user: {
-    id: number
-    email: string
-    user_type: "admin" | "customer" | string
-  }
+  user: AuthUser
 }
 
 export async function loginRequest(body: LoginRequest): Promise<LoginResponse> {
@@ -73,6 +69,14 @@ async function readApiError(res: Response): Promise<string> {
   return `Request failed (${res.status})`
 }
 
+export async function fetchMe(): Promise<AuthUser> {
+  const res = await fetch(`${getApiBaseUrl()}/api/v1/me`, {
+    headers: authJsonHeaders(),
+  })
+  if (!res.ok) throw new Error(await readApiError(res))
+  return res.json() as Promise<AuthUser>
+}
+
 export type ProductImage = {
   id: number
   product_id: number
@@ -95,15 +99,43 @@ export type ProductSpecification = {
   updated_at: string
 }
 
+/** Matches serverside `models.Category`. */
+export type Category = {
+  id: number
+  name: string
+  slug: string
+  description?: string
+  sort_order: number
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+/** Matches serverside `models.PricingTier`. */
+export type PricingTier = {
+  id: number
+  product_id: number
+  label: string
+  min_quantity: number
+  price_cents: number
+  is_highlighted: boolean
+  sort_order: number
+  created_at: string
+  updated_at: string
+}
+
 export type Product = {
   id: number
   name: string
   description: string
   price_cents: number
+  category_id?: number | null
+  category?: Category | null
   created_at: string
   updated_at: string
   images?: ProductImage[]
   specifications?: ProductSpecification[]
+  pricing_tiers?: PricingTier[]
 }
 
 export type PaginatedProductsResponse = {
@@ -275,6 +307,7 @@ export {
   clearAuthSession,
   getAuthToken,
   getAuthUser,
-  saveAuthSession
+  saveAuthSession,
+  type AuthUser,
 } from "#/lib/auth-session"
 

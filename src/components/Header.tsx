@@ -40,10 +40,16 @@ export default function Header() {
               </Link>
               {user?.email ? (
                 <span
-                  className="hidden max-w-[12rem] truncate text-xs font-normal text-[var(--sea-ink-soft)] sm:inline"
-                  title={user.email}
+                  className="hidden max-w-[14rem] truncate text-xs font-normal text-[var(--sea-ink-soft)] sm:inline"
+                  title={
+                    user.full_name
+                      ? `${user.full_name} · ${user.email}`
+                      : user.email
+                  }
                 >
-                  {user.email}
+                  {user.full_name?.trim()
+                    ? `${user.full_name} · ${user.email}`
+                    : user.email}
                 </span>
               ) : null}
               <Button

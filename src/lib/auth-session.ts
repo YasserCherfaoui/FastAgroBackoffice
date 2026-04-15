@@ -3,10 +3,57 @@ export const AUTH_USER_KEY = "fastagro_auth_user"
 
 const AUTH_CHANGE_EVENT = "fastagro-auth-change"
 
-export type StoredUser = {
+/** Matches serverside `services.AuthUser` JSON from login and register. */
+export type AuthUser = {
   id: number
   email: string
-  user_type: "admin" | "customer" | string
+  full_name: string
+  company_name: string
+  account_type: string
+  rc_number?: string | null
+  nif?: string | null
+  wilaya: string
+  address: string
+  phone: string
+  user_type: string
+}
+
+export type StoredUser = AuthUser
+
+/** Normalize API or legacy session payloads (older sessions may omit profile fields). */
+export function normalizeStoredUser(parsed: unknown): StoredUser | null {
+  if (typeof parsed !== "object" || parsed === null) return null
+  const o = parsed as Record<string, unknown>
+  if (
+    typeof o.id !== "number" ||
+    typeof o.email !== "string" ||
+    typeof o.user_type !== "string"
+  ) {
+    return null
+  }
+  return {
+    id: o.id,
+    email: o.email,
+    user_type: o.user_type,
+    full_name: typeof o.full_name === "string" ? o.full_name : "",
+    company_name: typeof o.company_name === "string" ? o.company_name : "",
+    account_type: typeof o.account_type === "string" ? o.account_type : "",
+    rc_number:
+      o.rc_number === undefined
+        ? undefined
+        : o.rc_number === null || typeof o.rc_number === "string"
+          ? o.rc_number
+          : undefined,
+    nif:
+      o.nif === undefined
+        ? undefined
+        : o.nif === null || typeof o.nif === "string"
+          ? o.nif
+          : undefined,
+    wilaya: typeof o.wilaya === "string" ? o.wilaya : "",
+    address: typeof o.address === "string" ? o.address : "",
+    phone: typeof o.phone === "string" ? o.phone : "",
+  }
 }
 
 export function getAuthToken(): string | null {
@@ -20,17 +67,7 @@ export function getAuthUser(): StoredUser | null {
   if (!raw) return null
   try {
     const parsed: unknown = JSON.parse(raw)
-    if (
-      typeof parsed === "object" &&
-      parsed !== null &&
-      "id" in parsed &&
-      "email" in parsed &&
-      "user_type" in parsed &&
-      typeof (parsed as { user_type: unknown }).user_type === "string" &&
-      typeof (parsed as StoredUser).email === "string"
-    ) {
-      return parsed as StoredUser
-    }
+    return normalizeStoredUser(parsed)
   } catch {
     /* ignore */
   }

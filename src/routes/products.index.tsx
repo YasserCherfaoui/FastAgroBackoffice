@@ -109,13 +109,16 @@ function ProductsPage() {
     priceCents,
     imageCount,
     specificationCount,
+    categoryName,
   }: {
     priceCents: number
     imageCount: number
     specificationCount: number
+    categoryName?: string | null
   }) {
     return (
       <p className="mt-0.5 text-sm text-(--sea-ink-soft)">
+        {categoryName ? `${categoryName} · ` : null}
         {formatMoney(priceCents)}
         {imageCount ? ` · ${imageCount} image(s)` : null}
         {specificationCount ? ` · ${specificationCount} spec(s)` : null}
@@ -144,6 +147,7 @@ function ProductsPage() {
                 priceCents={p.price_cents}
                 imageCount={p.images?.length ?? 0}
                 specificationCount={p.specifications?.length ?? 0}
+                categoryName={p.category?.name}
               />
               <div className="mt-3">
                 <Button asChild variant="outline" size="sm">
@@ -180,6 +184,7 @@ function ProductsPage() {
                     priceCents={p.price_cents}
                     imageCount={p.images?.length ?? 0}
                     specificationCount={p.specifications?.length ?? 0}
+                    categoryName={p.category?.name}
                   />
                 </div>
               </div>
@@ -199,10 +204,11 @@ function ProductsPage() {
 
     return (
       <div className="overflow-x-auto rounded-md border border-(--line)">
-        <table className="w-full min-w-[640px] text-left text-sm">
+        <table className="w-full min-w-[720px] text-left text-sm">
           <thead className="bg-(--surface) text-(--sea-ink-soft)">
             <tr>
               <th className="px-4 py-3 font-medium">Name</th>
+              <th className="px-4 py-3 font-medium">Category</th>
               <th className="px-4 py-3 font-medium">Price</th>
               <th className="px-4 py-3 font-medium">Images</th>
               <th className="px-4 py-3 font-medium">Specs</th>
@@ -220,6 +226,9 @@ function ProductsPage() {
                   >
                     {p.name}
                   </Link>
+                </td>
+                <td className="text-(--sea-ink-soft) px-4 py-3">
+                  {p.category?.name ?? "—"}
                 </td>
                 <td className="text-(--sea-ink-soft) px-4 py-3">
                   {formatMoney(p.price_cents)}

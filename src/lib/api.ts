@@ -17,7 +17,11 @@ export type LoginRequest = {
 
 export type LoginResponse = {
   token: string
-  user: { id: number; email: string }
+  user: {
+    id: number
+    email: string
+    user_type: "admin" | "customer" | string
+  }
 }
 
 export async function loginRequest(body: LoginRequest): Promise<LoginResponse> {

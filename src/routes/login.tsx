@@ -6,12 +6,12 @@ import { z } from "zod"
 
 import { Button } from "#/components/ui/button"
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
+    Card,
+    CardContent,
+    CardDescription,
+    CardFooter,
+    CardHeader,
+    CardTitle,
 } from "#/components/ui/card"
 import { Input } from "#/components/ui/input"
 import { Label } from "#/components/ui/label"
@@ -50,6 +50,9 @@ function LoginPage() {
   const loginMutation = useMutation({
     mutationFn: loginRequest,
     onSuccess: (data) => {
+      if (data.user.user_type !== "admin") {
+        throw new Error("Backoffice access is restricted to admin accounts")
+      }
       saveAuthSession(data.token, data.user)
       void navigate({ to: "/products" })
     },
@@ -57,13 +60,13 @@ function LoginPage() {
 
   return (
     <main className="page-wrap flex min-h-[calc(100vh-8rem)] items-center justify-center px-4 py-12">
-      <Card className="w-full max-w-md border-[var(--line)] bg-[var(--surface-strong)] shadow-[0_24px_80px_rgba(23,58,64,0.12)]">
+      <Card className="border-(--line) bg-(--surface-strong) w-full max-w-md shadow-[0_24px_80px_rgba(23,58,64,0.12)]">
         <CardHeader>
           <p className="island-kicker mb-1">Backoffice</p>
-          <CardTitle className="text-2xl text-[var(--sea-ink)]">
+          <CardTitle className="text-(--sea-ink) text-2xl">
             Sign in
           </CardTitle>
-          <CardDescription className="text-[var(--sea-ink-soft)]">
+          <CardDescription className="text-(--sea-ink-soft)">
             Enter your Fast Agro backoffice credentials.
           </CardDescription>
         </CardHeader>
@@ -113,7 +116,7 @@ function LoginPage() {
           <CardFooter className="flex flex-col gap-3 sm:flex-row sm:justify-end">
             <Button
               type="submit"
-              className="w-full bg-[var(--lagoon-deep)] text-white hover:bg-[var(--lagoon-deep)]/90 sm:w-auto"
+              className="bg-(--lagoon-deep) hover:bg-(--lagoon-deep)/90 w-full text-white sm:w-auto"
               disabled={loginMutation.isPending}
             >
               {loginMutation.isPending ? "Signing in…" : "Sign in"}

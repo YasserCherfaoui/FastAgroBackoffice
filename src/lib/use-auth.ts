@@ -35,6 +35,8 @@ export function useAuth(): AuthState {
         parsed !== null &&
         "id" in parsed &&
         "email" in parsed &&
+        "user_type" in parsed &&
+        typeof (parsed as { user_type: unknown }).user_type === "string" &&
         typeof (parsed as StoredUser).email === "string"
       ) {
         return parsed as StoredUser

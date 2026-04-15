@@ -15,6 +15,19 @@ import { redirectIfUnauthenticated } from "#/lib/require-auth"
 
 const PAGE_SIZE = 12
 
+function CategoryIconCell({ svg }: { svg?: string }) {
+  if (!svg?.trim()) {
+    return <span className="text-(--sea-ink-soft) text-xs">—</span>
+  }
+  return (
+    <div
+      className="text-(--sea-ink) flex h-8 w-8 items-center justify-center overflow-hidden [&_svg]:max-h-full [&_svg]:max-w-full"
+      // Admin-only tool; SVG is validated server-side.
+      dangerouslySetInnerHTML={{ __html: svg }}
+    />
+  )
+}
+
 export const Route = createFileRoute("/categories/")({
   ssr: false,
   beforeLoad: () => {
@@ -36,7 +49,7 @@ function CategoriesPage() {
 
   return (
     <main className="page-wrap px-4 py-10">
-      <div className="mx-auto flex max-w-3xl flex-col gap-6">
+      <div className="mx-auto flex max-w-5xl flex-col gap-6">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="island-kicker mb-1">Backoffice</p>
@@ -59,7 +72,8 @@ function CategoriesPage() {
           <CardHeader>
             <CardTitle className="text-lg">All categories</CardTitle>
             <CardDescription className="text-(--sea-ink-soft)">
-              Slugs must be unique; used in URLs and filters.
+              Parent links build a tree for navigation; icons and cover images
+              are optional storefront assets.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -83,10 +97,13 @@ function CategoriesPage() {
             ) : (
               <div className="space-y-4">
                 <div className="overflow-x-auto rounded-md border border-(--line)">
-                  <table className="w-full min-w-[560px] text-left text-sm">
+                  <table className="w-full min-w-[800px] text-left text-sm">
                     <thead className="bg-(--surface) text-(--sea-ink-soft)">
                       <tr>
                         <th className="px-4 py-3 font-medium">Name</th>
+                        <th className="px-4 py-3 font-medium">Parent</th>
+                        <th className="px-4 py-3 font-medium">Icon</th>
+                        <th className="px-4 py-3 font-medium">Image</th>
                         <th className="px-4 py-3 font-medium">Slug</th>
                         <th className="px-4 py-3 font-medium">Sort</th>
                         <th className="px-4 py-3 font-medium">Active</th>
@@ -106,6 +123,26 @@ function CategoriesPage() {
                             >
                               {c.name}
                             </Link>
+                          </td>
+                          <td className="text-(--sea-ink-soft) max-w-[10rem] truncate px-4 py-3 text-xs">
+                            {c.parent?.name ?? "—"}
+                          </td>
+                          <td className="px-4 py-3">
+                            <CategoryIconCell svg={c.icon_svg} />
+                          </td>
+                          <td className="px-4 py-3">
+                            {c.image_public_url ? (
+                              <img
+                                src={c.image_public_url}
+                                alt=""
+                                className="h-10 w-14 rounded border border-(--line) object-cover"
+                                loading="lazy"
+                              />
+                            ) : (
+                              <span className="text-(--sea-ink-soft) text-xs">
+                                —
+                              </span>
+                            )}
                           </td>
                           <td className="text-(--sea-ink-soft) px-4 py-3 font-mono text-xs">
                             {c.slug}

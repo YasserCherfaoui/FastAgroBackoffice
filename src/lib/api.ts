@@ -107,6 +107,15 @@ export type Category = {
   description?: string
   sort_order: number
   is_active: boolean
+  icon_svg?: string
+  parent_id?: number | null
+  parent?: Category | null
+  image_public_url?: string
+  image_bucket_name?: string
+  image_object_name?: string
+  image_file_name?: string
+  image_content_type?: string
+  image_size_bytes?: number
   created_at: string
   updated_at: string
 }
@@ -153,6 +162,8 @@ export async function createCategory(body: {
   description?: string
   sort_order?: number
   is_active?: boolean
+  icon_svg?: string
+  parent_id?: number | null
 }): Promise<Category> {
   const res = await fetch(`${getApiBaseUrl()}/api/v1/categories`, {
     method: "POST",
@@ -171,6 +182,8 @@ export async function updateCategory(
     description?: string
     sort_order: number
     is_active: boolean
+    icon_svg: string
+    parent_id: number | null
   },
 ): Promise<Category> {
   const res = await fetch(`${getApiBaseUrl()}/api/v1/categories/${id}`, {
@@ -188,6 +201,34 @@ export async function deleteCategory(id: number): Promise<void> {
     headers: authJsonHeaders(),
   })
   if (!res.ok) throw new Error(await readApiError(res))
+}
+
+export async function uploadCategoryImage(
+  categoryId: number,
+  file: File,
+): Promise<Category> {
+  const fd = new FormData()
+  fd.append("file", file)
+  const res = await fetch(
+    `${getApiBaseUrl()}/api/v1/categories/${categoryId}/images`,
+    {
+      method: "POST",
+      headers: authMultipartHeaders(),
+      body: fd,
+    },
+  )
+  const data: unknown = await res.json().catch(() => ({}))
+  if (!res.ok) {
+    const err =
+      typeof data === "object" &&
+      data !== null &&
+      "error" in data &&
+      typeof (data as { error: unknown }).error === "string"
+        ? (data as { error: string }).error
+        : `Upload failed (${res.status})`
+    throw new Error(err)
+  }
+  return data as Category
 }
 
 /** Matches serverside `models.PricingTier`. */

@@ -1,8 +1,9 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router"
-import { useEffect } from "react"
-import { Controller, useForm } from "react-hook-form"
+import { ChevronDown } from "lucide-react"
+import { useEffect, useMemo } from "react"
+import { Controller, useForm, useWatch } from "react-hook-form"
 import { z } from "zod"
 
 import { Button } from "#/components/ui/button"
@@ -19,8 +20,17 @@ import { Label } from "#/components/ui/label"
 import { Switch } from "#/components/ui/switch"
 import { Textarea } from "#/components/ui/textarea"
 import { useToast } from "#/components/ui/toast"
-import { deleteCategory, fetchCategory, updateCategory } from "#/lib/api"
+import {
+  deleteCategory,
+  fetchCategories,
+  fetchCategory,
+  updateCategory,
+  uploadCategoryImage,
+} from "#/lib/api"
+import { filterParentCategoryOptions } from "#/lib/category-parent-options"
 import { redirectIfUnauthenticated } from "#/lib/require-auth"
+
+const iconSnippet = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/></svg>`
 
 const schema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -31,6 +41,8 @@ const schema = z.object({
     .min(1, "Sort order is required")
     .refine((v) => !Number.isNaN(Number.parseInt(v, 10)), "Invalid number"),
   is_active: z.boolean(),
+  icon_svg: z.string().max(100000, "SVG must be at most 100KB"),
+  parent_id: z.string(),
 })
 
 type FormValues = z.infer<typeof schema>
@@ -42,6 +54,47 @@ export const Route = createFileRoute("/categories/$categoryId")({
   },
   component: EditCategoryPage,
 })
+
+function formatBytes(n: number) {
+  if (n < 1024) return `${n} B`
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`
+  return `${(n / (1024 * 1024)).toFixed(1)} MB`
+}
+
+/** Client-side guard aligned with API rules (no script). */
+function canPreviewSvg(markup: string): boolean {
+  const lower = markup.trim().toLowerCase()
+  if (!lower.includes("<svg")) return false
+  if (lower.includes("<script") || lower.includes("javascript:")) return false
+  return true
+}
+
+function SvgMarkupPreview({ markup }: { markup: string }) {
+  const trimmed = markup.trim()
+  if (!trimmed) {
+    return (
+      <p className="text-(--sea-ink-soft) m-0 text-sm">
+        Preview appears here when you paste SVG markup below.
+      </p>
+    )
+  }
+  if (!canPreviewSvg(trimmed)) {
+    return (
+      <p className="text-destructive m-0 text-sm" role="alert">
+        Preview hidden: markup must include{" "}
+        <code className="rounded bg-(--chip-bg) px-0.5">&lt;svg&gt;</code> and
+        must not contain scripts.
+      </p>
+    )
+  }
+  return (
+    <div
+      className="text-(--sea-ink) flex min-h-[88px] items-center justify-center [&_svg]:max-h-24 [&_svg]:max-w-full"
+      // Backoffice-only; server validates on save.
+      dangerouslySetInnerHTML={{ __html: trimmed }}
+    />
+  )
+}
 
 function EditCategoryPage() {
   const { categoryId } = Route.useParams()
@@ -55,6 +108,17 @@ function EditCategoryPage() {
     queryFn: () => fetchCategory(id),
     enabled: Number.isFinite(id),
   })
+
+  const allCategoriesQuery = useQuery({
+    queryKey: ["categories", "all-for-parent"],
+    queryFn: () => fetchCategories({ page: 1, perPage: 500 }),
+  })
+
+  const parentChoices = useMemo(() => {
+    const items = allCategoriesQuery.data?.items ?? []
+    if (!Number.isFinite(id)) return items
+    return filterParentCategoryOptions(items, id)
+  }, [allCategoriesQuery.data?.items, id])
 
   const {
     register,
@@ -70,7 +134,15 @@ function EditCategoryPage() {
       description: "",
       sort_order: "0",
       is_active: true,
+      icon_svg: "",
+      parent_id: "",
     },
+  })
+
+  const iconSvgWatch = useWatch({
+    control,
+    name: "icon_svg",
+    defaultValue: "",
   })
 
   useEffect(() => {
@@ -82,6 +154,8 @@ function EditCategoryPage() {
       description: c.description ?? "",
       sort_order: String(c.sort_order),
       is_active: c.is_active,
+      icon_svg: c.icon_svg ?? "",
+      parent_id: c.parent_id != null ? String(c.parent_id) : "",
     })
   }, [categoryQuery.data, reset])
 
@@ -93,12 +167,18 @@ function EditCategoryPage() {
         description: values.description,
         sort_order: Number.parseInt(values.sort_order, 10),
         is_active: values.is_active,
+        icon_svg: values.icon_svg,
+        parent_id:
+          values.parent_id === ""
+            ? null
+            : Number.parseInt(values.parent_id, 10),
       }),
     onSuccess: () => {
       showToast("success", "Category updated.")
       void queryClient.invalidateQueries({ queryKey: ["categories"] })
       void queryClient.invalidateQueries({ queryKey: ["category", id] })
       void queryClient.invalidateQueries({ queryKey: ["products"] })
+      void allCategoriesQuery.refetch()
     },
     onError: (err) => {
       showToast(
@@ -124,6 +204,21 @@ function EditCategoryPage() {
     },
   })
 
+  const uploadMutation = useMutation({
+    mutationFn: (file: File) => uploadCategoryImage(id, file),
+    onSuccess: () => {
+      showToast("success", "Image uploaded.")
+      void queryClient.invalidateQueries({ queryKey: ["category", id] })
+      void queryClient.invalidateQueries({ queryKey: ["categories"] })
+    },
+    onError: (err) => {
+      showToast(
+        "error",
+        err instanceof Error ? err.message : "Upload failed.",
+      )
+    },
+  })
+
   if (!Number.isFinite(id)) {
     return (
       <main className="page-wrap px-4 py-10">
@@ -132,9 +227,11 @@ function EditCategoryPage() {
     )
   }
 
+  const data = categoryQuery.data
+
   return (
     <main className="page-wrap px-4 py-10">
-      <div className="mx-auto max-w-lg">
+      <div className="mx-auto flex max-w-2xl flex-col gap-8">
         <p className="island-kicker mb-2">
           <Link
             to="/categories"
@@ -149,7 +246,8 @@ function EditCategoryPage() {
               Edit category
             </CardTitle>
             <CardDescription className="text-(--sea-ink-soft)">
-              Changing the slug may affect storefront URLs.
+              Changing the slug may affect storefront URLs. Set a parent for
+              navigation trees (no cycles).
             </CardDescription>
           </CardHeader>
           {categoryQuery.isLoading ? (
@@ -199,12 +297,152 @@ function EditCategoryPage() {
                   ) : null}
                 </div>
                 <div className="flex flex-col gap-2">
+                  <Label htmlFor="ec-parent">Parent category</Label>
+                  <select
+                    id="ec-parent"
+                    className="border-input bg-background ring-offset-background focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-xs outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50"
+                    disabled={allCategoriesQuery.isLoading}
+                    {...register("parent_id")}
+                  >
+                    <option value="">None (root)</option>
+                    {parentChoices.map((c) => (
+                      <option key={c.id} value={String(c.id)}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex flex-col gap-2">
                   <Label htmlFor="ec-desc">Description</Label>
                   <Textarea
                     id="ec-desc"
                     rows={3}
                     {...register("description")}
                   />
+                </div>
+                <div className="flex flex-col gap-3">
+                  <div>
+                    <Label
+                      id="ec-icon-heading"
+                      className="text-base"
+                    >
+                      Icon (SVG)
+                    </Label>
+                    <p className="text-(--sea-ink-soft) mt-0.5 text-xs">
+                      Check the preview, then open the panel below to edit or paste
+                      markup.
+                    </p>
+                  </div>
+                  <div
+                    className="rounded-lg border border-(--line) bg-(--surface-strong) px-4 py-6"
+                    role="region"
+                    aria-labelledby="ec-icon-heading"
+                  >
+                    <p className="text-(--sea-ink-soft) mb-2 text-xs font-medium uppercase tracking-wide">
+                      Preview
+                    </p>
+                    <SvgMarkupPreview markup={iconSvgWatch ?? ""} />
+                  </div>
+                  <details className="group rounded-lg border border-(--line) bg-(--surface) [&_summary::-webkit-details-marker]:hidden">
+                    <summary className="flex cursor-pointer list-none items-center justify-between gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-(--sea-ink) outline-none hover:bg-(--surface-strong) focus-visible:ring-2 focus-visible:ring-(--lagoon-deep)/30">
+                      <span>SVG code &amp; suggestions</span>
+                      <ChevronDown
+                        className="size-4 shrink-0 text-(--sea-ink-soft) transition-transform duration-200 group-open:rotate-180"
+                        aria-hidden
+                      />
+                    </summary>
+                    <div className="space-y-3 border-t border-(--line) px-3 pb-3 pt-3">
+                      <div className="flex flex-col gap-2">
+                        <Label htmlFor="ec-icon">Markup</Label>
+                        <Textarea
+                          id="ec-icon"
+                          rows={6}
+                          className="font-mono text-xs"
+                          placeholder="Paste &lt;svg&gt;…&lt;/svg&gt; markup"
+                          aria-invalid={!!errors.icon_svg}
+                          aria-describedby={
+                            errors.icon_svg ? "ec-icon-error" : undefined
+                          }
+                          {...register("icon_svg")}
+                        />
+                        {errors.icon_svg ? (
+                          <p
+                            id="ec-icon-error"
+                            className="text-destructive text-sm"
+                            role="alert"
+                          >
+                            {errors.icon_svg.message}
+                          </p>
+                        ) : null}
+                      </div>
+                      <div className="rounded-md border border-(--line) bg-(--surface-strong) p-3 text-xs text-(--sea-ink-soft)">
+                        <p className="m-0 mb-2 font-medium text-(--sea-ink)">
+                          Suggestions
+                        </p>
+                        <ul className="mb-3 list-disc space-y-1 pl-4">
+                          <li>
+                            Browse{" "}
+                            <a
+                              href="https://lucide.dev/icons/"
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-(--lagoon-deep) underline"
+                            >
+                              Lucide
+                            </a>
+                            ,{" "}
+                            <a
+                              href="https://heroicons.com/"
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-(--lagoon-deep) underline"
+                            >
+                              Heroicons
+                            </a>
+                            , or{" "}
+                            <a
+                              href="https://tabler.io/icons"
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-(--lagoon-deep) underline"
+                            >
+                              Tabler Icons
+                            </a>{" "}
+                            — copy the SVG only (no{" "}
+                            <code className="rounded bg-(--chip-bg) px-0.5">
+                              &lt;script&gt;
+                            </code>
+                            ).
+                          </li>
+                          <li>
+                            Use{" "}
+                            <code className="rounded bg-(--chip-bg) px-0.5">
+                              currentColor
+                            </code>{" "}
+                            for stroke/fill so the icon matches your theme.
+                          </li>
+                        </ul>
+                        <p className="m-0 mb-1 text-(--sea-ink)">
+                          Minimal example
+                        </p>
+                        <pre className="max-h-24 overflow-x-auto overflow-y-auto rounded border border-(--line) bg-[var(--surface)] p-2 text-[11px] leading-snug">
+                          {iconSnippet}
+                        </pre>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="mt-2"
+                          onClick={() => {
+                            void navigator.clipboard.writeText(iconSnippet)
+                            showToast("success", "Copied example SVG.")
+                          }}
+                        >
+                          Copy example
+                        </Button>
+                      </div>
+                    </div>
+                  </details>
                 </div>
                 <div className="flex flex-col gap-2">
                   <Label htmlFor="ec-sort">Sort order</Label>
@@ -254,7 +492,7 @@ function EditCategoryPage() {
                     if (
                       typeof window !== "undefined" &&
                       window.confirm(
-                        "Delete this category? Products in this category will have their category cleared.",
+                        "Delete this category? Products and child categories will be unlinked from it.",
                       )
                     ) {
                       deleteMutation.mutate()
@@ -279,6 +517,75 @@ function EditCategoryPage() {
             </form>
           )}
         </Card>
+
+        {data ? (
+          <Card className="border-(--line) bg-(--surface-strong)">
+            <CardHeader>
+              <CardTitle className="text-lg">Cover image</CardTitle>
+              <CardDescription>
+                Upload a banner or thumbnail for this category. Requires{" "}
+                <code className="rounded bg-(--chip-bg) px-1 py-0.5 text-xs">
+                  GCS_BUCKET
+                </code>{" "}
+                on the API.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-4">
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="cat-img">Upload</Label>
+                <Input
+                  id="cat-img"
+                  type="file"
+                  accept="image/*"
+                  disabled={uploadMutation.isPending}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    if (file) uploadMutation.mutate(file)
+                    e.target.value = ""
+                  }}
+                />
+              </div>
+              {uploadMutation.isError ? (
+                <p className="text-destructive text-sm" role="alert">
+                  {uploadMutation.error instanceof Error
+                    ? uploadMutation.error.message
+                    : "Upload failed"}
+                </p>
+              ) : null}
+              {data.image_public_url ? (
+                <div className="flex flex-wrap gap-4">
+                  <a
+                    href={data.image_public_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="block overflow-hidden rounded-md border border-(--line)"
+                  >
+                    <img
+                      src={data.image_public_url}
+                      alt={data.image_file_name ?? "Category"}
+                      className="max-h-40 max-w-full object-cover"
+                    />
+                  </a>
+                  <div className="min-w-0 flex-1 text-sm text-(--sea-ink-soft)">
+                    <p className="font-medium text-(--sea-ink)">
+                      {data.image_file_name}
+                    </p>
+                    <p className="mt-1">
+                      {typeof data.image_size_bytes === "number"
+                        ? formatBytes(data.image_size_bytes)
+                        : null}
+                      {data.image_content_type
+                        ? ` · ${data.image_content_type}`
+                        : null}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-(--sea-ink-soft)">No image yet.</p>
+              )}
+            </CardContent>
+          </Card>
+        ) : null}
       </div>
     </main>
   )

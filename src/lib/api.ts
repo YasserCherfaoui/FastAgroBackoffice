@@ -430,6 +430,103 @@ export async function deleteProductSpecification(
   if (!res.ok) throw new Error(await readApiError(res))
 }
 
+export type OrderItem = {
+  id: number
+  order_id: number
+  product_id?: number | null
+  pricing_tier_id?: number | null
+  product_name: string
+  product_image_url?: string
+  category_name?: string
+  tier_label?: string
+  quantity: number
+  unit_label?: string
+  unit_weight_kg: number
+  unit_price_cents: number
+  line_subtotal_cents: number
+  created_at: string
+  updated_at: string
+}
+
+export type Order = {
+  id: number
+  order_number: string
+  user_id: number
+  user?: AuthUser | null
+  customer_name: string
+  company_name: string
+  customer_email: string
+  customer_phone: string
+  account_type: string
+  user_type: string
+  rc_number?: string | null
+  nif?: string | null
+  wilaya: string
+  city: string
+  address: string
+  contact_person: string
+  instructions?: string
+  status: string
+  subtotal_cents: number
+  tax_cents: number
+  shipping_cents: number
+  total_cents: number
+  admin_note?: string
+  items?: OrderItem[]
+  created_at: string
+  updated_at: string
+}
+
+export type PaginatedOrdersResponse = {
+  items: Order[]
+  pagination: {
+    page: number
+    per_page: number
+    total_items: number
+    total_pages: number
+  }
+}
+
+export async function fetchOrders(params?: {
+  page?: number
+  perPage?: number
+  status?: string
+  q?: string
+}): Promise<PaginatedOrdersResponse> {
+  const searchParams = new URLSearchParams({
+    page: String(params?.page ?? 1),
+    per_page: String(params?.perPage ?? 12),
+  })
+  if (params?.status) searchParams.set('status', params.status)
+  if (params?.q) searchParams.set('q', params.q)
+  const res = await fetch(`${getApiBaseUrl()}/api/v1/admin/orders?${searchParams}`, {
+    headers: authJsonHeaders(),
+  })
+  if (!res.ok) throw new Error(await readApiError(res))
+  return res.json() as Promise<PaginatedOrdersResponse>
+}
+
+export async function fetchOrder(id: number): Promise<Order> {
+  const res = await fetch(`${getApiBaseUrl()}/api/v1/admin/orders/${id}`, {
+    headers: authJsonHeaders(),
+  })
+  if (!res.ok) throw new Error(await readApiError(res))
+  return res.json() as Promise<Order>
+}
+
+export async function updateOrderStatus(
+  id: number,
+  status: string,
+): Promise<Order> {
+  const res = await fetch(`${getApiBaseUrl()}/api/v1/admin/orders/${id}/status`, {
+    method: 'PATCH',
+    headers: authJsonHeaders(),
+    body: JSON.stringify({ status }),
+  })
+  if (!res.ok) throw new Error(await readApiError(res))
+  return res.json() as Promise<Order>
+}
+
 export {
   AUTH_TOKEN_KEY,
   clearAuthSession,

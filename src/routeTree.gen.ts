@@ -12,9 +12,11 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProductsIndexRouteImport } from './routes/products.index'
+import { Route as OrdersIndexRouteImport } from './routes/orders.index'
 import { Route as CategoriesIndexRouteImport } from './routes/categories.index'
 import { Route as ProductsNewRouteImport } from './routes/products.new'
 import { Route as ProductsProductIdRouteImport } from './routes/products.$productId'
+import { Route as OrdersOrderIdRouteImport } from './routes/orders.$orderId'
 import { Route as CategoriesNewRouteImport } from './routes/categories.new'
 import { Route as CategoriesCategoryIdRouteImport } from './routes/categories.$categoryId'
 
@@ -33,6 +35,11 @@ const ProductsIndexRoute = ProductsIndexRouteImport.update({
   path: '/products/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OrdersIndexRoute = OrdersIndexRouteImport.update({
+  id: '/orders/',
+  path: '/orders/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CategoriesIndexRoute = CategoriesIndexRouteImport.update({
   id: '/categories/',
   path: '/categories/',
@@ -46,6 +53,11 @@ const ProductsNewRoute = ProductsNewRouteImport.update({
 const ProductsProductIdRoute = ProductsProductIdRouteImport.update({
   id: '/products/$productId',
   path: '/products/$productId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OrdersOrderIdRoute = OrdersOrderIdRouteImport.update({
+  id: '/orders/$orderId',
+  path: '/orders/$orderId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CategoriesNewRoute = CategoriesNewRouteImport.update({
@@ -64,9 +76,11 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/categories/$categoryId': typeof CategoriesCategoryIdRoute
   '/categories/new': typeof CategoriesNewRoute
+  '/orders/$orderId': typeof OrdersOrderIdRoute
   '/products/$productId': typeof ProductsProductIdRoute
   '/products/new': typeof ProductsNewRoute
   '/categories/': typeof CategoriesIndexRoute
+  '/orders/': typeof OrdersIndexRoute
   '/products/': typeof ProductsIndexRoute
 }
 export interface FileRoutesByTo {
@@ -74,9 +88,11 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/categories/$categoryId': typeof CategoriesCategoryIdRoute
   '/categories/new': typeof CategoriesNewRoute
+  '/orders/$orderId': typeof OrdersOrderIdRoute
   '/products/$productId': typeof ProductsProductIdRoute
   '/products/new': typeof ProductsNewRoute
   '/categories': typeof CategoriesIndexRoute
+  '/orders': typeof OrdersIndexRoute
   '/products': typeof ProductsIndexRoute
 }
 export interface FileRoutesById {
@@ -85,9 +101,11 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/categories/$categoryId': typeof CategoriesCategoryIdRoute
   '/categories/new': typeof CategoriesNewRoute
+  '/orders/$orderId': typeof OrdersOrderIdRoute
   '/products/$productId': typeof ProductsProductIdRoute
   '/products/new': typeof ProductsNewRoute
   '/categories/': typeof CategoriesIndexRoute
+  '/orders/': typeof OrdersIndexRoute
   '/products/': typeof ProductsIndexRoute
 }
 export interface FileRouteTypes {
@@ -97,9 +115,11 @@ export interface FileRouteTypes {
     | '/login'
     | '/categories/$categoryId'
     | '/categories/new'
+    | '/orders/$orderId'
     | '/products/$productId'
     | '/products/new'
     | '/categories/'
+    | '/orders/'
     | '/products/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -107,9 +127,11 @@ export interface FileRouteTypes {
     | '/login'
     | '/categories/$categoryId'
     | '/categories/new'
+    | '/orders/$orderId'
     | '/products/$productId'
     | '/products/new'
     | '/categories'
+    | '/orders'
     | '/products'
   id:
     | '__root__'
@@ -117,9 +139,11 @@ export interface FileRouteTypes {
     | '/login'
     | '/categories/$categoryId'
     | '/categories/new'
+    | '/orders/$orderId'
     | '/products/$productId'
     | '/products/new'
     | '/categories/'
+    | '/orders/'
     | '/products/'
   fileRoutesById: FileRoutesById
 }
@@ -128,9 +152,11 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   CategoriesCategoryIdRoute: typeof CategoriesCategoryIdRoute
   CategoriesNewRoute: typeof CategoriesNewRoute
+  OrdersOrderIdRoute: typeof OrdersOrderIdRoute
   ProductsProductIdRoute: typeof ProductsProductIdRoute
   ProductsNewRoute: typeof ProductsNewRoute
   CategoriesIndexRoute: typeof CategoriesIndexRoute
+  OrdersIndexRoute: typeof OrdersIndexRoute
   ProductsIndexRoute: typeof ProductsIndexRoute
 }
 
@@ -157,6 +183,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProductsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/orders/': {
+      id: '/orders/'
+      path: '/orders'
+      fullPath: '/orders/'
+      preLoaderRoute: typeof OrdersIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/categories/': {
       id: '/categories/'
       path: '/categories'
@@ -176,6 +209,13 @@ declare module '@tanstack/react-router' {
       path: '/products/$productId'
       fullPath: '/products/$productId'
       preLoaderRoute: typeof ProductsProductIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/orders/$orderId': {
+      id: '/orders/$orderId'
+      path: '/orders/$orderId'
+      fullPath: '/orders/$orderId'
+      preLoaderRoute: typeof OrdersOrderIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/categories/new': {
@@ -200,9 +240,11 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   CategoriesCategoryIdRoute: CategoriesCategoryIdRoute,
   CategoriesNewRoute: CategoriesNewRoute,
+  OrdersOrderIdRoute: OrdersOrderIdRoute,
   ProductsProductIdRoute: ProductsProductIdRoute,
   ProductsNewRoute: ProductsNewRoute,
   CategoriesIndexRoute: CategoriesIndexRoute,
+  OrdersIndexRoute: OrdersIndexRoute,
   ProductsIndexRoute: ProductsIndexRoute,
 }
 export const routeTree = rootRouteImport

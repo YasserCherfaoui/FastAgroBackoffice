@@ -12,7 +12,10 @@ export type AuthUser = {
   account_type: string
   rc_number?: string | null
   nif?: string | null
-  wilaya: string
+  state_id?: number | null
+  state_name?: string
+  country_name?: string
+  wilaya?: string
   address: string
   phone: string
   user_type: string
@@ -50,6 +53,14 @@ export function normalizeStoredUser(parsed: unknown): StoredUser | null {
         : o.nif === null || typeof o.nif === "string"
           ? o.nif
           : undefined,
+    state_id:
+      typeof o.state_id === "number"
+        ? o.state_id
+        : o.state_id === null
+          ? null
+          : undefined,
+    state_name: typeof o.state_name === "string" ? o.state_name : undefined,
+    country_name: typeof o.country_name === "string" ? o.country_name : undefined,
     wilaya: typeof o.wilaya === "string" ? o.wilaya : "",
     address: typeof o.address === "string" ? o.address : "",
     phone: typeof o.phone === "string" ? o.phone : "",

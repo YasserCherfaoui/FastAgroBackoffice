@@ -106,7 +106,13 @@ function OrderDetailPage() {
                   </p>
                   <p className="m-0 mt-2 text-sm">{orderQuery.data.address}</p>
                   <p className="m-0 mt-1 text-sm">
-                    {orderQuery.data.city}, {orderQuery.data.wilaya}
+                    {[
+                      orderQuery.data.city,
+                      orderQuery.data.state_name || orderQuery.data.wilaya,
+                      orderQuery.data.country_name,
+                    ]
+                      .filter(Boolean)
+                      .join(', ')}
                   </p>
                   {orderQuery.data.instructions ? (
                     <p className="m-0 mt-2 text-sm text-(--sea-ink-soft)">

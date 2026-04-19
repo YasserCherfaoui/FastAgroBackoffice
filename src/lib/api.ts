@@ -461,7 +461,10 @@ export type Order = {
   user_type: string
   rc_number?: string | null
   nif?: string | null
-  wilaya: string
+  state_id?: number | null
+  state_name?: string
+  country_name?: string
+  wilaya?: string
   city: string
   address: string
   contact_person: string
@@ -525,6 +528,89 @@ export async function updateOrderStatus(
   })
   if (!res.ok) throw new Error(await readApiError(res))
   return res.json() as Promise<Order>
+}
+
+/** Admin logistics — matches serverside `AdminCountryRow`. */
+export type AdminCountryRow = {
+  id: number
+  code: string
+  name: string
+  is_active: boolean
+  sort_order: number
+}
+
+/** Admin logistics — matches serverside `AdminStateRow`. */
+export type AdminStateRow = {
+  id: number
+  country_id: number
+  code: string
+  name: string
+  is_active: boolean
+  sort_order: number
+  shipping_cents?: number | null
+}
+
+export async function fetchAdminGeoCountries(): Promise<AdminCountryRow[]> {
+  const res = await fetch(`${getApiBaseUrl()}/api/v1/admin/geo/countries`, {
+    headers: authJsonHeaders(),
+  })
+  if (!res.ok) throw new Error(await readApiError(res))
+  const data = (await res.json()) as { items: AdminCountryRow[] }
+  return data.items
+}
+
+export async function patchAdminGeoCountry(
+  id: number,
+  body: { is_active: boolean },
+): Promise<AdminCountryRow> {
+  const res = await fetch(`${getApiBaseUrl()}/api/v1/admin/geo/countries/${id}`, {
+    method: 'PATCH',
+    headers: authJsonHeaders(),
+    body: JSON.stringify(body),
+  })
+  if (!res.ok) throw new Error(await readApiError(res))
+  return res.json() as Promise<AdminCountryRow>
+}
+
+export async function fetchAdminGeoStates(
+  countryId: number,
+): Promise<AdminStateRow[]> {
+  const res = await fetch(
+    `${getApiBaseUrl()}/api/v1/admin/geo/countries/${countryId}/states`,
+    { headers: authJsonHeaders() },
+  )
+  if (!res.ok) throw new Error(await readApiError(res))
+  const data = (await res.json()) as { items: AdminStateRow[] }
+  return data.items
+}
+
+export async function patchAdminGeoState(
+  id: number,
+  body: { is_active: boolean },
+): Promise<AdminStateRow> {
+  const res = await fetch(`${getApiBaseUrl()}/api/v1/admin/geo/states/${id}`, {
+    method: 'PATCH',
+    headers: authJsonHeaders(),
+    body: JSON.stringify(body),
+  })
+  if (!res.ok) throw new Error(await readApiError(res))
+  return res.json() as Promise<AdminStateRow>
+}
+
+export async function putAdminGeoDeliveryRate(
+  stateId: number,
+  shippingCents: number,
+): Promise<AdminStateRow> {
+  const res = await fetch(
+    `${getApiBaseUrl()}/api/v1/admin/geo/states/${stateId}/delivery-rate`,
+    {
+      method: 'PUT',
+      headers: authJsonHeaders(),
+      body: JSON.stringify({ shipping_cents: shippingCents }),
+    },
+  )
+  if (!res.ok) throw new Error(await readApiError(res))
+  return res.json() as Promise<AdminStateRow>
 }
 
 export {

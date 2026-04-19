@@ -36,6 +36,19 @@ const schema = z.object({
     .min(1, "Price is required")
     .refine((v) => !Number.isNaN(Number.parseFloat(v)), "Invalid number")
     .refine((v) => Number.parseFloat(v) >= 0, "Must be zero or greater"),
+  tax_percent: z
+    .string()
+    .min(1, "Tax rate is required")
+    .refine((v) => !Number.isNaN(Number.parseFloat(v)), "Invalid number")
+    .refine((v) => {
+      const n = Number.parseFloat(v)
+      return n >= 0 && n <= 100
+    }, "Must be between 0 and 100"),
+  weight_kg: z
+    .string()
+    .min(1, "Weight is required")
+    .refine((v) => !Number.isNaN(Number.parseFloat(v)), "Invalid number")
+    .refine((v) => Number.parseFloat(v) > 0, "Must be greater than zero"),
   specifications: z.array(
     z.object({
       id: z.number().optional(),
@@ -123,6 +136,8 @@ function EditProductPage() {
       name: "",
       description: "",
       price: "",
+      tax_percent: "19",
+      weight_kg: "1",
       specifications: [],
       category_id: "",
       best_seller: false,
@@ -139,6 +154,8 @@ function EditProductPage() {
       name: productQuery.data.name,
       description: productQuery.data.description,
       price: (productQuery.data.price_cents / 100).toFixed(2),
+      tax_percent: ((productQuery.data.tax_rate_bps ?? 1900) / 100).toString(),
+      weight_kg: (productQuery.data.weight_kg ?? 1).toString(),
       category_id:
         productQuery.data.category_id != null
           ? String(productQuery.data.category_id)
@@ -156,6 +173,10 @@ function EditProductPage() {
   const updateMutation = useMutation({
     mutationFn: (values: FormValues) => {
       const price_cents = Math.round(Number.parseFloat(values.price) * 100)
+      const tax_rate_bps = Math.round(
+        Number.parseFloat(values.tax_percent) * 100,
+      )
+      const weight_kg = Number.parseFloat(values.weight_kg)
       const category_id =
         values.category_id === ""
           ? null
@@ -164,6 +185,8 @@ function EditProductPage() {
         name: values.name.trim(),
         description: values.description,
         price_cents,
+        tax_rate_bps,
+        weight_kg,
         best_seller: values.best_seller,
         category_id,
         specifications: values.specifications.map((spec) => ({
@@ -341,6 +364,44 @@ function EditProductPage() {
                       {errors.price.message}
                     </p>
                   ) : null}
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor="e-tax">TVA (%)</Label>
+                    <Input
+                      id="e-tax"
+                      inputMode="decimal"
+                      aria-invalid={!!errors.tax_percent}
+                      {...register("tax_percent")}
+                    />
+                    {errors.tax_percent ? (
+                      <p className="text-destructive text-sm" role="alert">
+                        {errors.tax_percent.message}
+                      </p>
+                    ) : (
+                      <p className="text-xs text-[var(--sea-ink-soft)]">
+                        Per line on storefront checkout.
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor="e-weight">Weight per unit (kg)</Label>
+                    <Input
+                      id="e-weight"
+                      inputMode="decimal"
+                      aria-invalid={!!errors.weight_kg}
+                      {...register("weight_kg")}
+                    />
+                    {errors.weight_kg ? (
+                      <p className="text-destructive text-sm" role="alert">
+                        {errors.weight_kg.message}
+                      </p>
+                    ) : (
+                      <p className="text-xs text-[var(--sea-ink-soft)]">
+                        Shown on cart and order totals.
+                      </p>
+                    )}
+                  </div>
                 </div>
                 <div className="flex flex-col gap-3">
                   <div className="flex items-center justify-between gap-2">

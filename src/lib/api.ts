@@ -252,6 +252,8 @@ export type Product = {
   name: string
   description: string
   price_cents: number
+  tax_rate_bps?: number
+  weight_kg?: number
   best_seller: boolean
   category_id?: number | null
   category?: Category | null
@@ -301,6 +303,8 @@ export async function createProduct(body: {
   name: string
   description: string
   price_cents: number
+  tax_rate_bps?: number
+  weight_kg: number
   best_seller?: boolean
   category_id?: number | null
   specifications?: Array<{ key: string; value: string }>
@@ -320,6 +324,8 @@ export async function updateProduct(
     name: string
     description: string
     price_cents: number
+    tax_rate_bps: number
+    weight_kg: number
     best_seller: boolean
     category_id: number | null
     specifications?: Array<{ id?: number; key: string; value: string }>
@@ -543,6 +549,7 @@ export type AdminCountryRow = {
 export type AdminStateRow = {
   id: number
   country_id: number
+  country_name?: string
   code: string
   name: string
   is_active: boolean
@@ -550,13 +557,80 @@ export type AdminStateRow = {
   shipping_cents?: number | null
 }
 
-export async function fetchAdminGeoCountries(): Promise<AdminCountryRow[]> {
+export type GeoListPagination = {
+  page: number
+  per_page: number
+  total_items: number
+  total_pages: number
+}
+
+export type AdminCountriesListResponse = {
+  items: AdminCountryRow[]
+  pagination: GeoListPagination
+}
+
+export type AdminStatesListResponse = {
+  items: AdminStateRow[]
+  pagination: GeoListPagination
+}
+
+export async function fetchAdminGeoCountriesPaged(params: {
+  page?: number
+  perPage?: number
+  q?: string
+}): Promise<AdminCountriesListResponse> {
+  const searchParams = new URLSearchParams({
+    page: String(params.page ?? 1),
+    per_page: String(params.perPage ?? 20),
+  })
+  if (params.q?.trim()) searchParams.set('q', params.q.trim())
+  const res = await fetch(
+    `${getApiBaseUrl()}/api/v1/admin/geo/countries?${searchParams}`,
+    { headers: authJsonHeaders() },
+  )
+  if (!res.ok) throw new Error(await readApiError(res))
+  return res.json() as Promise<AdminCountriesListResponse>
+}
+
+export async function createAdminGeoCountry(body: {
+  code: string
+  name: string
+  sort_order?: number
+  is_active?: boolean
+}): Promise<AdminCountryRow> {
   const res = await fetch(`${getApiBaseUrl()}/api/v1/admin/geo/countries`, {
+    method: 'POST',
+    headers: authJsonHeaders(),
+    body: JSON.stringify(body),
+  })
+  if (!res.ok) throw new Error(await readApiError(res))
+  return res.json() as Promise<AdminCountryRow>
+}
+
+export async function updateAdminGeoCountry(
+  id: number,
+  body: {
+    code: string
+    name: string
+    sort_order: number
+    is_active: boolean
+  },
+): Promise<AdminCountryRow> {
+  const res = await fetch(`${getApiBaseUrl()}/api/v1/admin/geo/countries/${id}`, {
+    method: 'PUT',
+    headers: authJsonHeaders(),
+    body: JSON.stringify(body),
+  })
+  if (!res.ok) throw new Error(await readApiError(res))
+  return res.json() as Promise<AdminCountryRow>
+}
+
+export async function deleteAdminGeoCountry(id: number): Promise<void> {
+  const res = await fetch(`${getApiBaseUrl()}/api/v1/admin/geo/countries/${id}`, {
+    method: 'DELETE',
     headers: authJsonHeaders(),
   })
   if (!res.ok) throw new Error(await readApiError(res))
-  const data = (await res.json()) as { items: AdminCountryRow[] }
-  return data.items
 }
 
 export async function patchAdminGeoCountry(
@@ -582,6 +656,84 @@ export async function fetchAdminGeoStates(
   if (!res.ok) throw new Error(await readApiError(res))
   const data = (await res.json()) as { items: AdminStateRow[] }
   return data.items
+}
+
+export async function fetchAdminGeoStatesPaged(params: {
+  page?: number
+  perPage?: number
+  q?: string
+  countryId?: number
+}): Promise<AdminStatesListResponse> {
+  const searchParams = new URLSearchParams({
+    page: String(params.page ?? 1),
+    per_page: String(params.perPage ?? 20),
+  })
+  if (params.q?.trim()) searchParams.set('q', params.q.trim())
+  if (params.countryId != null) {
+    searchParams.set('country_id', String(params.countryId))
+  }
+  const res = await fetch(
+    `${getApiBaseUrl()}/api/v1/admin/geo/states?${searchParams}`,
+    { headers: authJsonHeaders() },
+  )
+  if (!res.ok) throw new Error(await readApiError(res))
+  return res.json() as Promise<AdminStatesListResponse>
+}
+
+export async function createAdminGeoState(body: {
+  country_id: number
+  code: string
+  name: string
+  sort_order?: number
+  is_active?: boolean
+  shipping_cents?: number | null
+}): Promise<AdminStateRow> {
+  const res = await fetch(`${getApiBaseUrl()}/api/v1/admin/geo/states`, {
+    method: 'POST',
+    headers: authJsonHeaders(),
+    body: JSON.stringify(body),
+  })
+  if (!res.ok) throw new Error(await readApiError(res))
+  return res.json() as Promise<AdminStateRow>
+}
+
+export async function updateAdminGeoState(
+  id: number,
+  body: {
+    country_id?: number | null
+    code: string
+    name: string
+    sort_order: number
+    is_active: boolean
+    shipping_cents?: number | null
+  },
+): Promise<AdminStateRow> {
+  const payload: Record<string, unknown> = {
+    code: body.code,
+    name: body.name,
+    sort_order: body.sort_order,
+    is_active: body.is_active,
+  }
+  if (body.country_id != null) payload.country_id = body.country_id
+  if (body.shipping_cents !== undefined) {
+    payload.shipping_cents =
+      body.shipping_cents === null ? null : body.shipping_cents
+  }
+  const res = await fetch(`${getApiBaseUrl()}/api/v1/admin/geo/states/${id}`, {
+    method: 'PUT',
+    headers: authJsonHeaders(),
+    body: JSON.stringify(payload),
+  })
+  if (!res.ok) throw new Error(await readApiError(res))
+  return res.json() as Promise<AdminStateRow>
+}
+
+export async function deleteAdminGeoState(id: number): Promise<void> {
+  const res = await fetch(`${getApiBaseUrl()}/api/v1/admin/geo/states/${id}`, {
+    method: 'DELETE',
+    headers: authJsonHeaders(),
+  })
+  if (!res.ok) throw new Error(await readApiError(res))
 }
 
 export async function patchAdminGeoState(

@@ -15,11 +15,14 @@ import { Route as ProductsIndexRouteImport } from './routes/products.index'
 import { Route as OrdersIndexRouteImport } from './routes/orders.index'
 import { Route as LogisticsIndexRouteImport } from './routes/logistics.index'
 import { Route as CategoriesIndexRouteImport } from './routes/categories.index'
+import { Route as BrandsIndexRouteImport } from './routes/brands.index'
 import { Route as ProductsNewRouteImport } from './routes/products.new'
 import { Route as ProductsProductIdRouteImport } from './routes/products.$productId'
 import { Route as OrdersOrderIdRouteImport } from './routes/orders.$orderId'
 import { Route as CategoriesNewRouteImport } from './routes/categories.new'
 import { Route as CategoriesCategoryIdRouteImport } from './routes/categories.$categoryId'
+import { Route as BrandsNewRouteImport } from './routes/brands.new'
+import { Route as BrandsBrandIdRouteImport } from './routes/brands.$brandId'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -51,6 +54,11 @@ const CategoriesIndexRoute = CategoriesIndexRouteImport.update({
   path: '/categories/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BrandsIndexRoute = BrandsIndexRouteImport.update({
+  id: '/brands/',
+  path: '/brands/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProductsNewRoute = ProductsNewRouteImport.update({
   id: '/products/new',
   path: '/products/new',
@@ -76,15 +84,28 @@ const CategoriesCategoryIdRoute = CategoriesCategoryIdRouteImport.update({
   path: '/categories/$categoryId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BrandsNewRoute = BrandsNewRouteImport.update({
+  id: '/brands/new',
+  path: '/brands/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BrandsBrandIdRoute = BrandsBrandIdRouteImport.update({
+  id: '/brands/$brandId',
+  path: '/brands/$brandId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/brands/$brandId': typeof BrandsBrandIdRoute
+  '/brands/new': typeof BrandsNewRoute
   '/categories/$categoryId': typeof CategoriesCategoryIdRoute
   '/categories/new': typeof CategoriesNewRoute
   '/orders/$orderId': typeof OrdersOrderIdRoute
   '/products/$productId': typeof ProductsProductIdRoute
   '/products/new': typeof ProductsNewRoute
+  '/brands/': typeof BrandsIndexRoute
   '/categories/': typeof CategoriesIndexRoute
   '/logistics/': typeof LogisticsIndexRoute
   '/orders/': typeof OrdersIndexRoute
@@ -93,11 +114,14 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/brands/$brandId': typeof BrandsBrandIdRoute
+  '/brands/new': typeof BrandsNewRoute
   '/categories/$categoryId': typeof CategoriesCategoryIdRoute
   '/categories/new': typeof CategoriesNewRoute
   '/orders/$orderId': typeof OrdersOrderIdRoute
   '/products/$productId': typeof ProductsProductIdRoute
   '/products/new': typeof ProductsNewRoute
+  '/brands': typeof BrandsIndexRoute
   '/categories': typeof CategoriesIndexRoute
   '/logistics': typeof LogisticsIndexRoute
   '/orders': typeof OrdersIndexRoute
@@ -107,11 +131,14 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/brands/$brandId': typeof BrandsBrandIdRoute
+  '/brands/new': typeof BrandsNewRoute
   '/categories/$categoryId': typeof CategoriesCategoryIdRoute
   '/categories/new': typeof CategoriesNewRoute
   '/orders/$orderId': typeof OrdersOrderIdRoute
   '/products/$productId': typeof ProductsProductIdRoute
   '/products/new': typeof ProductsNewRoute
+  '/brands/': typeof BrandsIndexRoute
   '/categories/': typeof CategoriesIndexRoute
   '/logistics/': typeof LogisticsIndexRoute
   '/orders/': typeof OrdersIndexRoute
@@ -122,11 +149,14 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/login'
+    | '/brands/$brandId'
+    | '/brands/new'
     | '/categories/$categoryId'
     | '/categories/new'
     | '/orders/$orderId'
     | '/products/$productId'
     | '/products/new'
+    | '/brands/'
     | '/categories/'
     | '/logistics/'
     | '/orders/'
@@ -135,11 +165,14 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/login'
+    | '/brands/$brandId'
+    | '/brands/new'
     | '/categories/$categoryId'
     | '/categories/new'
     | '/orders/$orderId'
     | '/products/$productId'
     | '/products/new'
+    | '/brands'
     | '/categories'
     | '/logistics'
     | '/orders'
@@ -148,11 +181,14 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/login'
+    | '/brands/$brandId'
+    | '/brands/new'
     | '/categories/$categoryId'
     | '/categories/new'
     | '/orders/$orderId'
     | '/products/$productId'
     | '/products/new'
+    | '/brands/'
     | '/categories/'
     | '/logistics/'
     | '/orders/'
@@ -162,11 +198,14 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   LoginRoute: typeof LoginRoute
+  BrandsBrandIdRoute: typeof BrandsBrandIdRoute
+  BrandsNewRoute: typeof BrandsNewRoute
   CategoriesCategoryIdRoute: typeof CategoriesCategoryIdRoute
   CategoriesNewRoute: typeof CategoriesNewRoute
   OrdersOrderIdRoute: typeof OrdersOrderIdRoute
   ProductsProductIdRoute: typeof ProductsProductIdRoute
   ProductsNewRoute: typeof ProductsNewRoute
+  BrandsIndexRoute: typeof BrandsIndexRoute
   CategoriesIndexRoute: typeof CategoriesIndexRoute
   LogisticsIndexRoute: typeof LogisticsIndexRoute
   OrdersIndexRoute: typeof OrdersIndexRoute
@@ -217,6 +256,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CategoriesIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/brands/': {
+      id: '/brands/'
+      path: '/brands'
+      fullPath: '/brands/'
+      preLoaderRoute: typeof BrandsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/products/new': {
       id: '/products/new'
       path: '/products/new'
@@ -252,17 +298,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CategoriesCategoryIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/brands/new': {
+      id: '/brands/new'
+      path: '/brands/new'
+      fullPath: '/brands/new'
+      preLoaderRoute: typeof BrandsNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/brands/$brandId': {
+      id: '/brands/$brandId'
+      path: '/brands/$brandId'
+      fullPath: '/brands/$brandId'
+      preLoaderRoute: typeof BrandsBrandIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   LoginRoute: LoginRoute,
+  BrandsBrandIdRoute: BrandsBrandIdRoute,
+  BrandsNewRoute: BrandsNewRoute,
   CategoriesCategoryIdRoute: CategoriesCategoryIdRoute,
   CategoriesNewRoute: CategoriesNewRoute,
   OrdersOrderIdRoute: OrdersOrderIdRoute,
   ProductsProductIdRoute: ProductsProductIdRoute,
   ProductsNewRoute: ProductsNewRoute,
+  BrandsIndexRoute: BrandsIndexRoute,
   CategoriesIndexRoute: CategoriesIndexRoute,
   LogisticsIndexRoute: LogisticsIndexRoute,
   OrdersIndexRoute: OrdersIndexRoute,

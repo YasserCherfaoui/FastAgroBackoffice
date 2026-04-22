@@ -18,7 +18,7 @@ import { Label } from "#/components/ui/label"
 import { Switch } from "#/components/ui/switch"
 import { Textarea } from "#/components/ui/textarea"
 import { useToast } from "#/components/ui/toast"
-import { createProduct, fetchCategories } from "#/lib/api"
+import { createProduct, fetchBrands, fetchCategories } from "#/lib/api"
 import { redirectIfUnauthenticated } from "#/lib/require-auth"
 
 const schema = z.object({
@@ -49,6 +49,7 @@ const schema = z.object({
     }),
   ),
   category_id: z.string(),
+  brand_id: z.string(),
   best_seller: z.boolean(),
 }).superRefine((data, ctx) => {
   const seen = new Set<string>()
@@ -94,6 +95,10 @@ function NewProductPage() {
     queryKey: ["categories", "options"],
     queryFn: () => fetchCategories({ page: 1, perPage: 200 }),
   })
+  const brandsQuery = useQuery({
+    queryKey: ["brands", "options"],
+    queryFn: () => fetchBrands({ page: 1, perPage: 200 }),
+  })
 
   const {
     register,
@@ -110,6 +115,7 @@ function NewProductPage() {
       weight_kg: "1",
       specifications: [],
       category_id: "",
+      brand_id: "",
       best_seller: false,
     },
   })
@@ -129,6 +135,8 @@ function NewProductPage() {
         values.category_id === ""
           ? null
           : Number.parseInt(values.category_id, 10)
+      const brand_id =
+        values.brand_id === "" ? null : Number.parseInt(values.brand_id, 10)
       return createProduct({
         name: values.name.trim(),
         description: values.description,
@@ -137,6 +145,7 @@ function NewProductPage() {
         weight_kg,
         best_seller: values.best_seller,
         category_id,
+        brand_id,
         specifications: values.specifications.map((spec) => ({
           key: spec.key.trim(),
           value: spec.value.trim(),
@@ -223,6 +232,32 @@ function NewProductPage() {
                     className="text-[var(--lagoon-deep)] font-medium underline-offset-2 hover:underline"
                   >
                     Categories
+                  </Link>
+                  .
+                </p>
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="p-brand">Brand</Label>
+                <select
+                  id="p-brand"
+                  className="border-input bg-background ring-offset-background focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-xs outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  disabled={brandsQuery.isLoading}
+                  {...register("brand_id")}
+                >
+                  <option value="">No brand</option>
+                  {(brandsQuery.data?.items ?? []).map((b) => (
+                    <option key={b.id} value={String(b.id)}>
+                      {b.name}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-[var(--sea-ink-soft)]">
+                  Manage brands in{" "}
+                  <Link
+                    to="/brands"
+                    className="text-[var(--lagoon-deep)] font-medium underline-offset-2 hover:underline"
+                  >
+                    Brands
                   </Link>
                   .
                 </p>

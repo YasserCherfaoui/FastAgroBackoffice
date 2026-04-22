@@ -11,7 +11,7 @@ import {
   CardTitle,
 } from "#/components/ui/card"
 import { cn } from "#/lib/utils"
-import { fetchProducts, type Product } from "#/lib/api"
+import { fetchBrands, fetchProducts, type Product } from "#/lib/api"
 import { redirectIfUnauthenticated } from "#/lib/require-auth"
 
 export const Route = createFileRoute("/products/")({
@@ -95,10 +95,21 @@ function ProductImageCarousel({
 function ProductsPage() {
   const [view, setView] = useState<ProductView>("table")
   const [page, setPage] = useState(1)
+  const [brandFilter, setBrandFilter] = useState<string>("")
+
+  const brandsQuery = useQuery({
+    queryKey: ["brands", "options"],
+    queryFn: () => fetchBrands({ page: 1, perPage: 500 }),
+  })
 
   const q = useQuery({
-    queryKey: ["products", page, PAGE_SIZE],
-    queryFn: () => fetchProducts({ page, perPage: PAGE_SIZE }),
+    queryKey: ["products", page, PAGE_SIZE, brandFilter],
+    queryFn: () =>
+      fetchProducts({
+        page,
+        perPage: PAGE_SIZE,
+        brandId: brandFilter === "" ? null : Number.parseInt(brandFilter, 10),
+      }),
   })
   const items = q.data?.items ?? []
   const pagination = q.data?.pagination
@@ -110,15 +121,18 @@ function ProductsPage() {
     imageCount,
     specificationCount,
     categoryName,
+    brandName,
   }: {
     priceCents: number
     imageCount: number
     specificationCount: number
     categoryName?: string | null
+    brandName?: string | null
   }) {
     return (
       <p className="mt-0.5 text-sm text-(--sea-ink-soft)">
         {categoryName ? `${categoryName} · ` : null}
+        {brandName ? `${brandName} · ` : null}
         {formatMoney(priceCents)}
         {imageCount ? ` · ${imageCount} image(s)` : null}
         {specificationCount ? ` · ${specificationCount} spec(s)` : null}
@@ -148,6 +162,7 @@ function ProductsPage() {
                 imageCount={p.images?.length ?? 0}
                 specificationCount={p.specifications?.length ?? 0}
                 categoryName={p.category?.name}
+                brandName={p.brand?.name}
               />
               <div className="mt-3">
                 <Button asChild variant="outline" size="sm">
@@ -185,6 +200,7 @@ function ProductsPage() {
                     imageCount={p.images?.length ?? 0}
                     specificationCount={p.specifications?.length ?? 0}
                     categoryName={p.category?.name}
+                    brandName={p.brand?.name}
                   />
                 </div>
               </div>
@@ -209,6 +225,7 @@ function ProductsPage() {
             <tr>
               <th className="px-4 py-3 font-medium">Name</th>
               <th className="px-4 py-3 font-medium">Category</th>
+              <th className="px-4 py-3 font-medium">Brand</th>
               <th className="px-4 py-3 font-medium">Price</th>
               <th className="px-4 py-3 font-medium">Images</th>
               <th className="px-4 py-3 font-medium">Specs</th>
@@ -229,6 +246,9 @@ function ProductsPage() {
                 </td>
                 <td className="text-(--sea-ink-soft) px-4 py-3">
                   {p.category?.name ?? "—"}
+                </td>
+                <td className="text-(--sea-ink-soft) px-4 py-3">
+                  {p.brand?.name ?? "—"}
                 </td>
                 <td className="text-(--sea-ink-soft) px-4 py-3">
                   {formatMoney(p.price_cents)}
@@ -296,6 +316,31 @@ function ProductsPage() {
               <p className="text-(--sea-ink-soft) text-sm">
                 Showing {items.length} of {totalItems} products
               </p>
+              <div className="flex items-center gap-2">
+                <label
+                  htmlFor="products-brand-filter"
+                  className="text-(--sea-ink-soft) text-xs font-medium"
+                >
+                  Brand
+                </label>
+                <select
+                  id="products-brand-filter"
+                  className="border-input bg-background ring-offset-background focus-visible:ring-ring flex h-9 rounded-md border px-3 py-1 text-sm shadow-xs outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50"
+                  value={brandFilter}
+                  onChange={(e) => {
+                    setBrandFilter(e.target.value)
+                    setPage(1)
+                  }}
+                  disabled={brandsQuery.isLoading}
+                >
+                  <option value="">All brands</option>
+                  {(brandsQuery.data?.items ?? []).map((b) => (
+                    <option key={b.id} value={String(b.id)}>
+                      {b.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
               <div
                 className="inline-flex items-center gap-1 rounded-md border border-(--line) bg-(--surface) p-1"
                 role="tablist"

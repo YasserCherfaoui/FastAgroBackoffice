@@ -21,6 +21,7 @@ import { Textarea } from "#/components/ui/textarea"
 import { useToast } from "#/components/ui/toast"
 import {
   deleteProduct,
+  fetchBrands,
   fetchCategories,
   fetchProduct,
   updateProduct,
@@ -57,6 +58,7 @@ const schema = z.object({
     }),
   ),
   category_id: z.string(),
+  brand_id: z.string(),
   best_seller: z.boolean(),
 }).superRefine((data, ctx) => {
   const seen = new Set<string>()
@@ -123,6 +125,10 @@ function EditProductPage() {
     queryKey: ["categories", "options"],
     queryFn: () => fetchCategories({ page: 1, perPage: 200 }),
   })
+  const brandsQuery = useQuery({
+    queryKey: ["brands", "options"],
+    queryFn: () => fetchBrands({ page: 1, perPage: 200 }),
+  })
 
   const {
     register,
@@ -140,6 +146,7 @@ function EditProductPage() {
       weight_kg: "1",
       specifications: [],
       category_id: "",
+      brand_id: "",
       best_seller: false,
     },
   })
@@ -160,6 +167,8 @@ function EditProductPage() {
         productQuery.data.category_id != null
           ? String(productQuery.data.category_id)
           : "",
+      brand_id:
+        productQuery.data.brand_id != null ? String(productQuery.data.brand_id) : "",
       best_seller: productQuery.data.best_seller ?? false,
       specifications:
         productQuery.data.specifications?.map((spec) => ({
@@ -181,6 +190,8 @@ function EditProductPage() {
         values.category_id === ""
           ? null
           : Number.parseInt(values.category_id, 10)
+      const brand_id =
+        values.brand_id === "" ? null : Number.parseInt(values.brand_id, 10)
       return updateProduct(id, {
         name: values.name.trim(),
         description: values.description,
@@ -189,6 +200,7 @@ function EditProductPage() {
         weight_kg,
         best_seller: values.best_seller,
         category_id,
+        brand_id,
         specifications: values.specifications.map((spec) => ({
           id: spec.id,
           key: spec.key.trim(),
@@ -326,6 +338,32 @@ function EditProductPage() {
                       className="text-[var(--lagoon-deep)] font-medium underline-offset-2 hover:underline"
                     >
                       Categories
+                    </Link>
+                    .
+                  </p>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="e-brand">Brand</Label>
+                  <select
+                    id="e-brand"
+                    className="border-input bg-background ring-offset-background focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-xs outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    disabled={brandsQuery.isLoading}
+                    {...register("brand_id")}
+                  >
+                    <option value="">No brand</option>
+                    {(brandsQuery.data?.items ?? []).map((b) => (
+                      <option key={b.id} value={String(b.id)}>
+                        {b.name}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-[var(--sea-ink-soft)]">
+                    Manage in{" "}
+                    <Link
+                      to="/brands"
+                      className="text-[var(--lagoon-deep)] font-medium underline-offset-2 hover:underline"
+                    >
+                      Brands
                     </Link>
                     .
                   </p>

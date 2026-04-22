@@ -121,8 +121,34 @@ export type Category = {
   updated_at: string
 }
 
+export type Brand = {
+  id: number
+  name: string
+  slug: string
+  brand_image?: string
+  parent_id?: number | null
+  parent?: Brand | null
+  image_bucket_name?: string
+  image_object_name?: string
+  image_file_name?: string
+  image_content_type?: string
+  image_size_bytes?: number
+  created_at: string
+  updated_at: string
+}
+
 export type PaginatedCategoriesResponse = {
   items: Category[]
+  pagination: {
+    page: number
+    per_page: number
+    total_items: number
+    total_pages: number
+  }
+}
+
+export type PaginatedBrandsResponse = {
+  items: Brand[]
   pagination: {
     page: number
     per_page: number
@@ -234,6 +260,95 @@ export async function uploadCategoryImage(
   return data as Category
 }
 
+export async function fetchBrands(params?: {
+  page?: number
+  perPage?: number
+}): Promise<PaginatedBrandsResponse> {
+  const page = params?.page ?? 1
+  const perPage = params?.perPage ?? 100
+  const searchParams = new URLSearchParams({
+    page: String(page),
+    per_page: String(perPage),
+  })
+  const res = await fetch(`${getApiBaseUrl()}/api/v1/brands?${searchParams}`, {
+    headers: authJsonHeaders(),
+  })
+  if (!res.ok) throw new Error(await readApiError(res))
+  return res.json() as Promise<PaginatedBrandsResponse>
+}
+
+export async function fetchBrand(id: number): Promise<Brand> {
+  const res = await fetch(`${getApiBaseUrl()}/api/v1/brands/${id}`, {
+    headers: authJsonHeaders(),
+  })
+  if (!res.ok) throw new Error(await readApiError(res))
+  return res.json() as Promise<Brand>
+}
+
+export async function createBrand(body: {
+  name: string
+  slug?: string
+  parent_id?: number | null
+}): Promise<Brand> {
+  const res = await fetch(`${getApiBaseUrl()}/api/v1/brands`, {
+    method: "POST",
+    headers: authJsonHeaders(),
+    body: JSON.stringify(body),
+  })
+  if (!res.ok) throw new Error(await readApiError(res))
+  return res.json() as Promise<Brand>
+}
+
+export async function updateBrand(
+  id: number,
+  body: {
+    name: string
+    slug?: string
+    parent_id: number | null
+  },
+): Promise<Brand> {
+  const res = await fetch(`${getApiBaseUrl()}/api/v1/brands/${id}`, {
+    method: "PUT",
+    headers: authJsonHeaders(),
+    body: JSON.stringify(body),
+  })
+  if (!res.ok) throw new Error(await readApiError(res))
+  return res.json() as Promise<Brand>
+}
+
+export async function deleteBrand(id: number): Promise<void> {
+  const res = await fetch(`${getApiBaseUrl()}/api/v1/brands/${id}`, {
+    method: "DELETE",
+    headers: authJsonHeaders(),
+  })
+  if (!res.ok) throw new Error(await readApiError(res))
+}
+
+export async function uploadBrandImage(
+  brandId: number,
+  file: File,
+): Promise<Brand> {
+  const fd = new FormData()
+  fd.append("file", file)
+  const res = await fetch(`${getApiBaseUrl()}/api/v1/brands/${brandId}/images`, {
+    method: "POST",
+    headers: authMultipartHeaders(),
+    body: fd,
+  })
+  const data: unknown = await res.json().catch(() => ({}))
+  if (!res.ok) {
+    const err =
+      typeof data === "object" &&
+      data !== null &&
+      "error" in data &&
+      typeof (data as { error: unknown }).error === "string"
+        ? (data as { error: string }).error
+        : `Upload failed (${res.status})`
+    throw new Error(err)
+  }
+  return data as Brand
+}
+
 /** Matches serverside `models.PricingTier`. */
 export type PricingTier = {
   id: number
@@ -257,6 +372,8 @@ export type Product = {
   best_seller: boolean
   category_id?: number | null
   category?: Category | null
+  brand_id?: number | null
+  brand?: Brand | null
   created_at: string
   updated_at: string
   images?: ProductImage[]
@@ -277,6 +394,7 @@ export type PaginatedProductsResponse = {
 export async function fetchProducts(params?: {
   page?: number
   perPage?: number
+  brandId?: number | null
 }): Promise<PaginatedProductsResponse> {
   const page = params?.page ?? 1
   const perPage = params?.perPage ?? 12
@@ -284,6 +402,9 @@ export async function fetchProducts(params?: {
     page: String(page),
     per_page: String(perPage),
   })
+  if (params?.brandId != null) {
+    searchParams.set("brand_id", String(params.brandId))
+  }
   const res = await fetch(`${getApiBaseUrl()}/api/v1/products?${searchParams}`, {
     headers: authJsonHeaders(),
   })
@@ -307,6 +428,7 @@ export async function createProduct(body: {
   weight_kg: number
   best_seller?: boolean
   category_id?: number | null
+  brand_id?: number | null
   specifications?: Array<{ key: string; value: string }>
 }): Promise<Product> {
   const res = await fetch(`${getApiBaseUrl()}/api/v1/products`, {
@@ -328,6 +450,7 @@ export async function updateProduct(
     weight_kg: number
     best_seller: boolean
     category_id: number | null
+    brand_id: number | null
     specifications?: Array<{ id?: number; key: string; value: string }>
   },
 ): Promise<Product> {

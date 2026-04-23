@@ -15,12 +15,15 @@ import { Route as ProductsIndexRouteImport } from './routes/products.index'
 import { Route as OrdersIndexRouteImport } from './routes/orders.index'
 import { Route as LogisticsIndexRouteImport } from './routes/logistics.index'
 import { Route as CategoriesIndexRouteImport } from './routes/categories.index'
+import { Route as CarouselsIndexRouteImport } from './routes/carousels.index'
 import { Route as BrandsIndexRouteImport } from './routes/brands.index'
 import { Route as ProductsNewRouteImport } from './routes/products.new'
 import { Route as ProductsProductIdRouteImport } from './routes/products.$productId'
 import { Route as OrdersOrderIdRouteImport } from './routes/orders.$orderId'
 import { Route as CategoriesNewRouteImport } from './routes/categories.new'
 import { Route as CategoriesCategoryIdRouteImport } from './routes/categories.$categoryId'
+import { Route as CarouselsNewRouteImport } from './routes/carousels.new'
+import { Route as CarouselsCarouselIdRouteImport } from './routes/carousels.$carouselId'
 import { Route as BrandsNewRouteImport } from './routes/brands.new'
 import { Route as BrandsBrandIdRouteImport } from './routes/brands.$brandId'
 
@@ -54,6 +57,11 @@ const CategoriesIndexRoute = CategoriesIndexRouteImport.update({
   path: '/categories/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CarouselsIndexRoute = CarouselsIndexRouteImport.update({
+  id: '/carousels/',
+  path: '/carousels/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BrandsIndexRoute = BrandsIndexRouteImport.update({
   id: '/brands/',
   path: '/brands/',
@@ -84,6 +92,16 @@ const CategoriesCategoryIdRoute = CategoriesCategoryIdRouteImport.update({
   path: '/categories/$categoryId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CarouselsNewRoute = CarouselsNewRouteImport.update({
+  id: '/carousels/new',
+  path: '/carousels/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CarouselsCarouselIdRoute = CarouselsCarouselIdRouteImport.update({
+  id: '/carousels/$carouselId',
+  path: '/carousels/$carouselId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BrandsNewRoute = BrandsNewRouteImport.update({
   id: '/brands/new',
   path: '/brands/new',
@@ -100,12 +118,15 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/brands/$brandId': typeof BrandsBrandIdRoute
   '/brands/new': typeof BrandsNewRoute
+  '/carousels/$carouselId': typeof CarouselsCarouselIdRoute
+  '/carousels/new': typeof CarouselsNewRoute
   '/categories/$categoryId': typeof CategoriesCategoryIdRoute
   '/categories/new': typeof CategoriesNewRoute
   '/orders/$orderId': typeof OrdersOrderIdRoute
   '/products/$productId': typeof ProductsProductIdRoute
   '/products/new': typeof ProductsNewRoute
   '/brands/': typeof BrandsIndexRoute
+  '/carousels/': typeof CarouselsIndexRoute
   '/categories/': typeof CategoriesIndexRoute
   '/logistics/': typeof LogisticsIndexRoute
   '/orders/': typeof OrdersIndexRoute
@@ -116,12 +137,15 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/brands/$brandId': typeof BrandsBrandIdRoute
   '/brands/new': typeof BrandsNewRoute
+  '/carousels/$carouselId': typeof CarouselsCarouselIdRoute
+  '/carousels/new': typeof CarouselsNewRoute
   '/categories/$categoryId': typeof CategoriesCategoryIdRoute
   '/categories/new': typeof CategoriesNewRoute
   '/orders/$orderId': typeof OrdersOrderIdRoute
   '/products/$productId': typeof ProductsProductIdRoute
   '/products/new': typeof ProductsNewRoute
   '/brands': typeof BrandsIndexRoute
+  '/carousels': typeof CarouselsIndexRoute
   '/categories': typeof CategoriesIndexRoute
   '/logistics': typeof LogisticsIndexRoute
   '/orders': typeof OrdersIndexRoute
@@ -133,12 +157,15 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/brands/$brandId': typeof BrandsBrandIdRoute
   '/brands/new': typeof BrandsNewRoute
+  '/carousels/$carouselId': typeof CarouselsCarouselIdRoute
+  '/carousels/new': typeof CarouselsNewRoute
   '/categories/$categoryId': typeof CategoriesCategoryIdRoute
   '/categories/new': typeof CategoriesNewRoute
   '/orders/$orderId': typeof OrdersOrderIdRoute
   '/products/$productId': typeof ProductsProductIdRoute
   '/products/new': typeof ProductsNewRoute
   '/brands/': typeof BrandsIndexRoute
+  '/carousels/': typeof CarouselsIndexRoute
   '/categories/': typeof CategoriesIndexRoute
   '/logistics/': typeof LogisticsIndexRoute
   '/orders/': typeof OrdersIndexRoute
@@ -151,12 +178,15 @@ export interface FileRouteTypes {
     | '/login'
     | '/brands/$brandId'
     | '/brands/new'
+    | '/carousels/$carouselId'
+    | '/carousels/new'
     | '/categories/$categoryId'
     | '/categories/new'
     | '/orders/$orderId'
     | '/products/$productId'
     | '/products/new'
     | '/brands/'
+    | '/carousels/'
     | '/categories/'
     | '/logistics/'
     | '/orders/'
@@ -167,12 +197,15 @@ export interface FileRouteTypes {
     | '/login'
     | '/brands/$brandId'
     | '/brands/new'
+    | '/carousels/$carouselId'
+    | '/carousels/new'
     | '/categories/$categoryId'
     | '/categories/new'
     | '/orders/$orderId'
     | '/products/$productId'
     | '/products/new'
     | '/brands'
+    | '/carousels'
     | '/categories'
     | '/logistics'
     | '/orders'
@@ -183,12 +216,15 @@ export interface FileRouteTypes {
     | '/login'
     | '/brands/$brandId'
     | '/brands/new'
+    | '/carousels/$carouselId'
+    | '/carousels/new'
     | '/categories/$categoryId'
     | '/categories/new'
     | '/orders/$orderId'
     | '/products/$productId'
     | '/products/new'
     | '/brands/'
+    | '/carousels/'
     | '/categories/'
     | '/logistics/'
     | '/orders/'
@@ -200,12 +236,15 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   BrandsBrandIdRoute: typeof BrandsBrandIdRoute
   BrandsNewRoute: typeof BrandsNewRoute
+  CarouselsCarouselIdRoute: typeof CarouselsCarouselIdRoute
+  CarouselsNewRoute: typeof CarouselsNewRoute
   CategoriesCategoryIdRoute: typeof CategoriesCategoryIdRoute
   CategoriesNewRoute: typeof CategoriesNewRoute
   OrdersOrderIdRoute: typeof OrdersOrderIdRoute
   ProductsProductIdRoute: typeof ProductsProductIdRoute
   ProductsNewRoute: typeof ProductsNewRoute
   BrandsIndexRoute: typeof BrandsIndexRoute
+  CarouselsIndexRoute: typeof CarouselsIndexRoute
   CategoriesIndexRoute: typeof CategoriesIndexRoute
   LogisticsIndexRoute: typeof LogisticsIndexRoute
   OrdersIndexRoute: typeof OrdersIndexRoute
@@ -256,6 +295,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CategoriesIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/carousels/': {
+      id: '/carousels/'
+      path: '/carousels'
+      fullPath: '/carousels/'
+      preLoaderRoute: typeof CarouselsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/brands/': {
       id: '/brands/'
       path: '/brands'
@@ -298,6 +344,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CategoriesCategoryIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/carousels/new': {
+      id: '/carousels/new'
+      path: '/carousels/new'
+      fullPath: '/carousels/new'
+      preLoaderRoute: typeof CarouselsNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/carousels/$carouselId': {
+      id: '/carousels/$carouselId'
+      path: '/carousels/$carouselId'
+      fullPath: '/carousels/$carouselId'
+      preLoaderRoute: typeof CarouselsCarouselIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/brands/new': {
       id: '/brands/new'
       path: '/brands/new'
@@ -320,12 +380,15 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   BrandsBrandIdRoute: BrandsBrandIdRoute,
   BrandsNewRoute: BrandsNewRoute,
+  CarouselsCarouselIdRoute: CarouselsCarouselIdRoute,
+  CarouselsNewRoute: CarouselsNewRoute,
   CategoriesCategoryIdRoute: CategoriesCategoryIdRoute,
   CategoriesNewRoute: CategoriesNewRoute,
   OrdersOrderIdRoute: OrdersOrderIdRoute,
   ProductsProductIdRoute: ProductsProductIdRoute,
   ProductsNewRoute: ProductsNewRoute,
   BrandsIndexRoute: BrandsIndexRoute,
+  CarouselsIndexRoute: CarouselsIndexRoute,
   CategoriesIndexRoute: CategoriesIndexRoute,
   LogisticsIndexRoute: LogisticsIndexRoute,
   OrdersIndexRoute: OrdersIndexRoute,

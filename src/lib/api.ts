@@ -157,6 +157,35 @@ export type PaginatedBrandsResponse = {
   }
 }
 
+/** Matches serverside `models.Carousel`. */
+export type Carousel = {
+  id: number
+  title?: string
+  subtitle?: string
+  cta_text?: string
+  cta_url?: string
+  sort_order: number
+  is_active: boolean
+  image_public_url?: string
+  image_bucket_name?: string
+  image_object_name?: string
+  image_file_name?: string
+  image_content_type?: string
+  image_size_bytes?: number
+  created_at: string
+  updated_at: string
+}
+
+export type PaginatedCarouselsResponse = {
+  items: Carousel[]
+  pagination: {
+    page: number
+    per_page: number
+    total_items: number
+    total_pages: number
+  }
+}
+
 export async function fetchCategories(params?: {
   page?: number
   perPage?: number
@@ -347,6 +376,105 @@ export async function uploadBrandImage(
     throw new Error(err)
   }
   return data as Brand
+}
+
+export async function fetchCarousels(params?: {
+  page?: number
+  perPage?: number
+}): Promise<PaginatedCarouselsResponse> {
+  const page = params?.page ?? 1
+  const perPage = params?.perPage ?? 12
+  const searchParams = new URLSearchParams({
+    page: String(page),
+    per_page: String(perPage),
+  })
+  const res = await fetch(
+    `${getApiBaseUrl()}/api/v1/carousels?${searchParams}`,
+    { headers: authJsonHeaders() },
+  )
+  if (!res.ok) throw new Error(await readApiError(res))
+  return res.json() as Promise<PaginatedCarouselsResponse>
+}
+
+export async function fetchCarousel(id: number): Promise<Carousel> {
+  const res = await fetch(`${getApiBaseUrl()}/api/v1/carousels/${id}`, {
+    headers: authJsonHeaders(),
+  })
+  if (!res.ok) throw new Error(await readApiError(res))
+  return res.json() as Promise<Carousel>
+}
+
+export async function createCarousel(body: {
+  title?: string
+  subtitle?: string
+  cta_text?: string
+  cta_url?: string
+  sort_order?: number
+  is_active?: boolean
+}): Promise<Carousel> {
+  const res = await fetch(`${getApiBaseUrl()}/api/v1/carousels`, {
+    method: "POST",
+    headers: authJsonHeaders(),
+    body: JSON.stringify(body),
+  })
+  if (!res.ok) throw new Error(await readApiError(res))
+  return res.json() as Promise<Carousel>
+}
+
+export async function updateCarousel(
+  id: number,
+  body: {
+    title?: string
+    subtitle?: string
+    cta_text?: string
+    cta_url?: string
+    sort_order: number
+    is_active: boolean
+  },
+): Promise<Carousel> {
+  const res = await fetch(`${getApiBaseUrl()}/api/v1/carousels/${id}`, {
+    method: "PUT",
+    headers: authJsonHeaders(),
+    body: JSON.stringify(body),
+  })
+  if (!res.ok) throw new Error(await readApiError(res))
+  return res.json() as Promise<Carousel>
+}
+
+export async function deleteCarousel(id: number): Promise<void> {
+  const res = await fetch(`${getApiBaseUrl()}/api/v1/carousels/${id}`, {
+    method: "DELETE",
+    headers: authJsonHeaders(),
+  })
+  if (!res.ok) throw new Error(await readApiError(res))
+}
+
+export async function uploadCarouselImage(
+  carouselId: number,
+  file: File,
+): Promise<Carousel> {
+  const fd = new FormData()
+  fd.append("file", file)
+  const res = await fetch(
+    `${getApiBaseUrl()}/api/v1/carousels/${carouselId}/images`,
+    {
+      method: "POST",
+      headers: authMultipartHeaders(),
+      body: fd,
+    },
+  )
+  const data: unknown = await res.json().catch(() => ({}))
+  if (!res.ok) {
+    const err =
+      typeof data === "object" &&
+      data !== null &&
+      "error" in data &&
+      typeof (data as { error: unknown }).error === "string"
+        ? (data as { error: string }).error
+        : `Upload failed (${res.status})`
+    throw new Error(err)
+  }
+  return data as Carousel
 }
 
 /** Matches serverside `models.PricingTier`. */

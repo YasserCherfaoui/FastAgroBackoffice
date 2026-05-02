@@ -13,6 +13,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProductsIndexRouteImport } from './routes/products.index'
 import { Route as OrdersIndexRouteImport } from './routes/orders.index'
+import { Route as NotificationsIndexRouteImport } from './routes/notifications.index'
 import { Route as LogisticsIndexRouteImport } from './routes/logistics.index'
 import { Route as CategoriesIndexRouteImport } from './routes/categories.index'
 import { Route as CarouselsIndexRouteImport } from './routes/carousels.index'
@@ -45,6 +46,11 @@ const ProductsIndexRoute = ProductsIndexRouteImport.update({
 const OrdersIndexRoute = OrdersIndexRouteImport.update({
   id: '/orders/',
   path: '/orders/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NotificationsIndexRoute = NotificationsIndexRouteImport.update({
+  id: '/notifications/',
+  path: '/notifications/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LogisticsIndexRoute = LogisticsIndexRouteImport.update({
@@ -129,6 +135,7 @@ export interface FileRoutesByFullPath {
   '/carousels/': typeof CarouselsIndexRoute
   '/categories/': typeof CategoriesIndexRoute
   '/logistics/': typeof LogisticsIndexRoute
+  '/notifications/': typeof NotificationsIndexRoute
   '/orders/': typeof OrdersIndexRoute
   '/products/': typeof ProductsIndexRoute
 }
@@ -148,6 +155,7 @@ export interface FileRoutesByTo {
   '/carousels': typeof CarouselsIndexRoute
   '/categories': typeof CategoriesIndexRoute
   '/logistics': typeof LogisticsIndexRoute
+  '/notifications': typeof NotificationsIndexRoute
   '/orders': typeof OrdersIndexRoute
   '/products': typeof ProductsIndexRoute
 }
@@ -168,6 +176,7 @@ export interface FileRoutesById {
   '/carousels/': typeof CarouselsIndexRoute
   '/categories/': typeof CategoriesIndexRoute
   '/logistics/': typeof LogisticsIndexRoute
+  '/notifications/': typeof NotificationsIndexRoute
   '/orders/': typeof OrdersIndexRoute
   '/products/': typeof ProductsIndexRoute
 }
@@ -189,6 +198,7 @@ export interface FileRouteTypes {
     | '/carousels/'
     | '/categories/'
     | '/logistics/'
+    | '/notifications/'
     | '/orders/'
     | '/products/'
   fileRoutesByTo: FileRoutesByTo
@@ -208,6 +218,7 @@ export interface FileRouteTypes {
     | '/carousels'
     | '/categories'
     | '/logistics'
+    | '/notifications'
     | '/orders'
     | '/products'
   id:
@@ -227,6 +238,7 @@ export interface FileRouteTypes {
     | '/carousels/'
     | '/categories/'
     | '/logistics/'
+    | '/notifications/'
     | '/orders/'
     | '/products/'
   fileRoutesById: FileRoutesById
@@ -247,6 +259,7 @@ export interface RootRouteChildren {
   CarouselsIndexRoute: typeof CarouselsIndexRoute
   CategoriesIndexRoute: typeof CategoriesIndexRoute
   LogisticsIndexRoute: typeof LogisticsIndexRoute
+  NotificationsIndexRoute: typeof NotificationsIndexRoute
   OrdersIndexRoute: typeof OrdersIndexRoute
   ProductsIndexRoute: typeof ProductsIndexRoute
 }
@@ -279,6 +292,13 @@ declare module '@tanstack/react-router' {
       path: '/orders'
       fullPath: '/orders/'
       preLoaderRoute: typeof OrdersIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/notifications/': {
+      id: '/notifications/'
+      path: '/notifications'
+      fullPath: '/notifications/'
+      preLoaderRoute: typeof NotificationsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/logistics/': {
@@ -391,6 +411,7 @@ const rootRouteChildren: RootRouteChildren = {
   CarouselsIndexRoute: CarouselsIndexRoute,
   CategoriesIndexRoute: CategoriesIndexRoute,
   LogisticsIndexRoute: LogisticsIndexRoute,
+  NotificationsIndexRoute: NotificationsIndexRoute,
   OrdersIndexRoute: OrdersIndexRoute,
   ProductsIndexRoute: ProductsIndexRoute,
 }

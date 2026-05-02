@@ -1008,6 +1008,55 @@ export async function patchAdminGeoState(
   return res.json() as Promise<AdminStateRow>
 }
 
+/** Matches serverside `models.OrderNotificationRecipient`. */
+export type OrderNotificationRecipient = {
+  id: number
+  email: string
+  created_at: string
+  updated_at: string
+}
+
+export type OrderNotificationRecipientsResponse = {
+  items: OrderNotificationRecipient[]
+}
+
+export async function fetchOrderNotificationRecipients(): Promise<OrderNotificationRecipientsResponse> {
+  const res = await fetch(
+    `${getApiBaseUrl()}/api/v1/admin/order-notification-recipients`,
+    { headers: authJsonHeaders() },
+  )
+  if (!res.ok) throw new Error(await readApiError(res))
+  return res.json() as Promise<OrderNotificationRecipientsResponse>
+}
+
+export async function createOrderNotificationRecipient(body: {
+  email: string
+}): Promise<OrderNotificationRecipient> {
+  const res = await fetch(
+    `${getApiBaseUrl()}/api/v1/admin/order-notification-recipients`,
+    {
+      method: "POST",
+      headers: authJsonHeaders(),
+      body: JSON.stringify(body),
+    },
+  )
+  if (!res.ok) throw new Error(await readApiError(res))
+  return res.json() as Promise<OrderNotificationRecipient>
+}
+
+export async function deleteOrderNotificationRecipient(
+  id: number,
+): Promise<void> {
+  const res = await fetch(
+    `${getApiBaseUrl()}/api/v1/admin/order-notification-recipients/${id}`,
+    {
+      method: "DELETE",
+      headers: authJsonHeaders(),
+    },
+  )
+  if (!res.ok) throw new Error(await readApiError(res))
+}
+
 export async function putAdminGeoDeliveryRate(
   stateId: number,
   shippingCents: number,

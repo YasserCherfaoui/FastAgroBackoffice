@@ -73,6 +73,13 @@ export default function Header() {
               >
                 Logistics
               </Link>
+              <Link
+                to="/notifications"
+                className="nav-link"
+                activeProps={{ className: "nav-link is-active" }}
+              >
+                Order emails
+              </Link>
               {user?.email ? (
                 <span
                   className="text-(--sea-ink-soft) hidden max-w-56 truncate text-xs font-normal sm:inline"

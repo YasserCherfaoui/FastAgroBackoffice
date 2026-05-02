@@ -10,6 +10,15 @@ export function getApiBaseUrl(): string {
   return DEFAULT_API
 }
 
+/** Storefront origin for product permalinks (CSV export). Null if unset. */
+export function getStorefrontBaseUrl(): string | null {
+  const url = import.meta.env.VITE_STOREFRONT_URL
+  if (typeof url === "string" && url.trim().length > 0) {
+    return url.trim().replace(/\/$/, "")
+  }
+  return null
+}
+
 export type LoginRequest = {
   email: string
   password: string
@@ -546,6 +555,22 @@ export async function fetchProducts(params?: {
   })
   if (!res.ok) throw new Error(await readApiError(res))
   return res.json() as Promise<PaginatedProductsResponse>
+}
+
+const PRODUCTS_EXPORT_PAGE_SIZE = 100
+
+/** Full catalog: pages until all products are loaded (server max per_page is 100). */
+export async function fetchAllProducts(): Promise<Product[]> {
+  const all: Product[] = []
+  let page = 1
+  let totalPages = 1
+  do {
+    const res = await fetchProducts({ page, perPage: PRODUCTS_EXPORT_PAGE_SIZE })
+    all.push(...res.items)
+    totalPages = res.pagination.total_pages
+    page += 1
+  } while (page <= totalPages)
+  return all
 }
 
 export async function fetchProduct(id: number): Promise<Product> {

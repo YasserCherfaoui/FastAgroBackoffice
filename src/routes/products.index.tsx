@@ -13,7 +13,14 @@ import {
 import { Input } from "#/components/ui/input"
 import { Label } from "#/components/ui/label"
 import { formatMoneyFromCents } from "#/lib/format-dzd"
-import { fetchBrands, fetchProducts, type Product } from "#/lib/api"
+import {
+  fetchAllProducts,
+  fetchBrands,
+  fetchProducts,
+  getStorefrontBaseUrl,
+  type Product,
+} from "#/lib/api"
+import { productsToGoogleMerchantCsv } from "#/lib/google-merchant-csv"
 import { useDebouncedValue } from "#/lib/use-debounced-value"
 import { cn } from "#/lib/utils"
 import { redirectIfUnauthenticated } from "#/lib/require-auth"
@@ -95,6 +102,9 @@ function ProductsPage() {
   const [brandFilter, setBrandFilter] = useState<string>("")
   const [searchInput, setSearchInput] = useState("")
   const searchQ = useDebouncedValue(searchInput, 320)
+  const [isExporting, setIsExporting] = useState(false)
+  const [exportError, setExportError] = useState<string | null>(null)
+  const storefrontBase = getStorefrontBaseUrl()
 
   useEffect(() => {
     setPage(1)
@@ -119,6 +129,30 @@ function ProductsPage() {
   const pagination = q.data?.pagination
   const totalItems = pagination?.total_items ?? 0
   const totalPages = pagination?.total_pages ?? 1
+
+  async function handleExportCsv() {
+    if (!storefrontBase) return
+    setExportError(null)
+    setIsExporting(true)
+    try {
+      const products = await fetchAllProducts()
+      const csv = productsToGoogleMerchantCsv(products, storefrontBase)
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8" })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = `products-google-merchant-${new Date().toISOString().slice(0, 10)}.csv`
+      a.rel = "noopener"
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+    } catch (err) {
+      setExportError(err instanceof Error ? err.message : "Export failed")
+    } finally {
+      setIsExporting(false)
+    }
+  }
 
   function ProductMeta({
     priceCents,
@@ -300,13 +334,40 @@ function ProductsPage() {
               Manage catalog items and images.
             </p>
           </div>
-          <Button
-            asChild
-            className="bg-(--lagoon-deep) text-white hover:bg-(--lagoon-deep)/90"
-          >
-            <Link to="/products/new">Add product</Link>
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={!storefrontBase || isExporting}
+              onClick={() => void handleExportCsv()}
+              title={
+                storefrontBase
+                  ? "Download full catalog as CSV for Google Merchant"
+                  : "Set VITE_STOREFRONT_URL in .env to enable export"
+              }
+            >
+              {isExporting ? "Exporting…" : "Export CSV"}
+            </Button>
+            <Button
+              asChild
+              className="bg-(--lagoon-deep) text-white hover:bg-(--lagoon-deep)/90"
+            >
+              <Link to="/products/new">Add product</Link>
+            </Button>
+          </div>
         </div>
+        {exportError ? (
+          <p className="text-destructive text-sm" role="alert">
+            {exportError}
+          </p>
+        ) : null}
+        {!storefrontBase ? (
+          <p className="text-(--sea-ink-soft) text-sm">
+            CSV export needs{" "}
+            <code className="text-xs">VITE_STOREFRONT_URL</code> (storefront
+            origin) in your environment.
+          </p>
+        ) : null}
 
         <Card className="border-(--line) bg-(--surface-strong)">
           <CardHeader>

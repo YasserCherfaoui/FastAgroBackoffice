@@ -10,8 +10,12 @@ import {
   CardHeader,
   CardTitle,
 } from "#/components/ui/card"
-import { cn } from "#/lib/utils"
+import { Input } from "#/components/ui/input"
+import { Label } from "#/components/ui/label"
+import { formatMoneyFromCents } from "#/lib/format-dzd"
 import { fetchBrands, fetchProducts, type Product } from "#/lib/api"
+import { useDebouncedValue } from "#/lib/use-debounced-value"
+import { cn } from "#/lib/utils"
 import { redirectIfUnauthenticated } from "#/lib/require-auth"
 
 export const Route = createFileRoute("/products/")({
@@ -21,13 +25,6 @@ export const Route = createFileRoute("/products/")({
   },
   component: ProductsPage,
 })
-
-function formatMoney(cents: number) {
-  return new Intl.NumberFormat(undefined, {
-    style: "currency",
-    currency: "USD",
-  }).format(cents / 100)
-}
 
 type ProductView = "table" | "list" | "cards"
 const PAGE_SIZE = 12
@@ -96,6 +93,12 @@ function ProductsPage() {
   const [view, setView] = useState<ProductView>("table")
   const [page, setPage] = useState(1)
   const [brandFilter, setBrandFilter] = useState<string>("")
+  const [searchInput, setSearchInput] = useState("")
+  const searchQ = useDebouncedValue(searchInput, 320)
+
+  useEffect(() => {
+    setPage(1)
+  }, [searchQ])
 
   const brandsQuery = useQuery({
     queryKey: ["brands", "options"],
@@ -103,12 +106,13 @@ function ProductsPage() {
   })
 
   const q = useQuery({
-    queryKey: ["products", page, PAGE_SIZE, brandFilter],
+    queryKey: ["products", page, PAGE_SIZE, brandFilter, searchQ],
     queryFn: () =>
       fetchProducts({
         page,
         perPage: PAGE_SIZE,
         brandId: brandFilter === "" ? null : Number.parseInt(brandFilter, 10),
+        q: searchQ.trim() || undefined,
       }),
   })
   const items = q.data?.items ?? []
@@ -133,7 +137,7 @@ function ProductsPage() {
       <p className="mt-0.5 text-sm text-(--sea-ink-soft)">
         {categoryName ? `${categoryName} · ` : null}
         {brandName ? `${brandName} · ` : null}
-        {formatMoney(priceCents)}
+        {formatMoneyFromCents(priceCents)}
         {imageCount ? ` · ${imageCount} image(s)` : null}
         {specificationCount ? ` · ${specificationCount} spec(s)` : null}
       </p>
@@ -251,7 +255,7 @@ function ProductsPage() {
                   {p.brand?.name ?? "—"}
                 </td>
                 <td className="text-(--sea-ink-soft) px-4 py-3">
-                  {formatMoney(p.price_cents)}
+                  {formatMoneyFromCents(p.price_cents)}
                 </td>
                 <td className="text-(--sea-ink-soft) px-4 py-3">
                   {p.images?.[0]?.public_url ? (
@@ -312,6 +316,18 @@ function ProductsPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
+            <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center">
+              <Label htmlFor="products-search" className="sr-only">
+                Search products
+              </Label>
+              <Input
+                id="products-search"
+                placeholder="Search by name or description…"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                className="max-w-md"
+              />
+            </div>
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <p className="text-(--sea-ink-soft) text-sm">
                 Showing {items.length} of {totalItems} products
@@ -372,14 +388,20 @@ function ProductsPage() {
               </p>
             ) : !items.length ? (
               <p className="text-(--sea-ink-soft) text-sm">
-                No products yet.{" "}
-                <Link
-                  to="/products/new"
-                  className="text-(--lagoon-deep) font-medium underline-offset-2 hover:underline"
-                >
-                  Create one
-                </Link>
-                .
+                {searchQ.trim() ? (
+                  "No products match your search."
+                ) : (
+                  <>
+                    No products yet.{" "}
+                    <Link
+                      to="/products/new"
+                      className="text-(--lagoon-deep) font-medium underline-offset-2 hover:underline"
+                    >
+                      Create one
+                    </Link>
+                    .
+                  </>
+                )}
               </p>
             ) : (
               <div className="space-y-4">

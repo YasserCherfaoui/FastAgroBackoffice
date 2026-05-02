@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
 import { Link, createFileRoute } from "@tanstack/react-router"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 
 import { Button } from "#/components/ui/button"
 import {
@@ -10,7 +10,10 @@ import {
   CardHeader,
   CardTitle,
 } from "#/components/ui/card"
+import { Input } from "#/components/ui/input"
+import { Label } from "#/components/ui/label"
 import { fetchCarousels } from "#/lib/api"
+import { useDebouncedValue } from "#/lib/use-debounced-value"
 import { redirectIfUnauthenticated } from "#/lib/require-auth"
 
 const PAGE_SIZE = 12
@@ -31,9 +34,21 @@ function labelForRow(item: { title?: string; id: number }) {
 
 function CarouselsPage() {
   const [page, setPage] = useState(1)
+  const [searchInput, setSearchInput] = useState("")
+  const searchQ = useDebouncedValue(searchInput, 320)
+
+  useEffect(() => {
+    setPage(1)
+  }, [searchQ])
+
   const q = useQuery({
-    queryKey: ["carousels", page, PAGE_SIZE],
-    queryFn: () => fetchCarousels({ page, perPage: PAGE_SIZE }),
+    queryKey: ["carousels", page, PAGE_SIZE, searchQ],
+    queryFn: () =>
+      fetchCarousels({
+        page,
+        perPage: PAGE_SIZE,
+        q: searchQ.trim() || undefined,
+      }),
   })
   const items = q.data?.items ?? []
   const pagination = q.data?.pagination
@@ -63,6 +78,18 @@ function CarouselsPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
+            <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center">
+              <Label htmlFor="carousels-search" className="sr-only">
+                Search slides
+              </Label>
+              <Input
+                id="carousels-search"
+                placeholder="Search by title, subtitle, CTA, URL, or id…"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                className="max-w-md"
+              />
+            </div>
             {q.isLoading ? (
               <p className="text-(--sea-ink-soft) text-sm">Loading…</p>
             ) : q.isError ? (
@@ -71,14 +98,20 @@ function CarouselsPage() {
               </p>
             ) : !items.length ? (
               <p className="text-(--sea-ink-soft) text-sm">
-                No slides yet.{" "}
-                <Link
-                  to="/carousels/new"
-                  className="text-(--lagoon-deep) font-medium underline-offset-2 hover:underline"
-                >
-                  Create one
-                </Link>
-                .
+                {searchQ.trim() ? (
+                  "No slides match your search."
+                ) : (
+                  <>
+                    No slides yet.{" "}
+                    <Link
+                      to="/carousels/new"
+                      className="text-(--lagoon-deep) font-medium underline-offset-2 hover:underline"
+                    >
+                      Create one
+                    </Link>
+                    .
+                  </>
+                )}
               </p>
             ) : (
               <div className="space-y-4">

@@ -284,7 +284,7 @@ function NewProductPage() {
                 />
               </div>
               <div className="flex flex-col gap-2">
-                <Label htmlFor="p-price">Price (USD)</Label>
+                <Label htmlFor="p-price">Price (DZD)</Label>
                 <Input
                   id="p-price"
                   inputMode="decimal"

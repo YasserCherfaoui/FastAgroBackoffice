@@ -189,6 +189,7 @@ export type PaginatedCarouselsResponse = {
 export async function fetchCategories(params?: {
   page?: number
   perPage?: number
+  q?: string
 }): Promise<PaginatedCategoriesResponse> {
   const page = params?.page ?? 1
   const perPage = params?.perPage ?? 100
@@ -196,6 +197,7 @@ export async function fetchCategories(params?: {
     page: String(page),
     per_page: String(perPage),
   })
+  if (params?.q?.trim()) searchParams.set("q", params.q.trim())
   const res = await fetch(
     `${getApiBaseUrl()}/api/v1/categories?${searchParams}`,
     { headers: authJsonHeaders() },
@@ -292,6 +294,7 @@ export async function uploadCategoryImage(
 export async function fetchBrands(params?: {
   page?: number
   perPage?: number
+  q?: string
 }): Promise<PaginatedBrandsResponse> {
   const page = params?.page ?? 1
   const perPage = params?.perPage ?? 100
@@ -299,6 +302,7 @@ export async function fetchBrands(params?: {
     page: String(page),
     per_page: String(perPage),
   })
+  if (params?.q?.trim()) searchParams.set("q", params.q.trim())
   const res = await fetch(`${getApiBaseUrl()}/api/v1/brands?${searchParams}`, {
     headers: authJsonHeaders(),
   })
@@ -381,6 +385,7 @@ export async function uploadBrandImage(
 export async function fetchCarousels(params?: {
   page?: number
   perPage?: number
+  q?: string
 }): Promise<PaginatedCarouselsResponse> {
   const page = params?.page ?? 1
   const perPage = params?.perPage ?? 12
@@ -388,6 +393,7 @@ export async function fetchCarousels(params?: {
     page: String(page),
     per_page: String(perPage),
   })
+  if (params?.q?.trim()) searchParams.set("q", params.q.trim())
   const res = await fetch(
     `${getApiBaseUrl()}/api/v1/carousels?${searchParams}`,
     { headers: authJsonHeaders() },
@@ -523,6 +529,7 @@ export async function fetchProducts(params?: {
   page?: number
   perPage?: number
   brandId?: number | null
+  q?: string
 }): Promise<PaginatedProductsResponse> {
   const page = params?.page ?? 1
   const perPage = params?.perPage ?? 12
@@ -533,6 +540,7 @@ export async function fetchProducts(params?: {
   if (params?.brandId != null) {
     searchParams.set("brand_id", String(params.brandId))
   }
+  if (params?.q?.trim()) searchParams.set("q", params.q.trim())
   const res = await fetch(`${getApiBaseUrl()}/api/v1/products?${searchParams}`, {
     headers: authJsonHeaders(),
   })

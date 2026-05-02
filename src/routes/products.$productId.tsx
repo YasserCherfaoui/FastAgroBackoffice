@@ -27,6 +27,7 @@ import {
   updateProduct,
   uploadProductImage,
 } from "#/lib/api"
+import { formatMoneyFromCents } from "#/lib/format-dzd"
 import { redirectIfUnauthenticated } from "#/lib/require-auth"
 
 const schema = z.object({
@@ -94,13 +95,6 @@ export const Route = createFileRoute("/products/$productId")({
   },
   component: EditProductPage,
 })
-
-function formatMoney(cents: number) {
-  return new Intl.NumberFormat(undefined, {
-    style: "currency",
-    currency: "USD",
-  }).format(cents / 100)
-}
 
 function formatBytes(n: number) {
   if (n < 1024) return `${n} B`
@@ -390,7 +384,7 @@ function EditProductPage() {
                   />
                 </div>
                 <div className="flex flex-col gap-2">
-                  <Label htmlFor="e-price">Price (USD)</Label>
+                  <Label htmlFor="e-price">Price (DZD)</Label>
                   <Input
                     id="e-price"
                     inputMode="decimal"
@@ -495,7 +489,7 @@ function EditProductPage() {
                 </div>
                 {productQuery.data ? (
                   <p className="text-xs text-[var(--sea-ink-soft)]">
-                    Listed: {formatMoney(productQuery.data.price_cents)} · ID{" "}
+                    Listed: {formatMoneyFromCents(productQuery.data.price_cents)} · ID{" "}
                     {productQuery.data.id}
                   </p>
                 ) : null}

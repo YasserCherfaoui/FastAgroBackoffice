@@ -10,6 +10,7 @@ import {
 } from "#/components/ui/card"
 import { useToast } from "#/components/ui/toast"
 import { fetchOrder, updateOrderStatus } from "#/lib/api"
+import { formatMoneyFromCents } from "#/lib/format-dzd"
 import { redirectIfUnauthenticated } from "#/lib/require-auth"
 
 export const Route = createFileRoute("/orders/$orderId")({
@@ -19,13 +20,6 @@ export const Route = createFileRoute("/orders/$orderId")({
   },
   component: OrderDetailPage,
 })
-
-function formatMoney(cents: number) {
-  return new Intl.NumberFormat(undefined, {
-    style: "currency",
-    currency: "USD",
-  }).format(cents / 100)
-}
 
 function OrderDetailPage() {
   const { orderId } = Route.useParams()
@@ -149,10 +143,10 @@ function OrderDetailPage() {
                           {item.quantity} {item.unit_label || "units"}
                         </td>
                         <td className="px-4 py-3 text-(--sea-ink-soft)">
-                          {formatMoney(item.unit_price_cents)}
+                          {formatMoneyFromCents(item.unit_price_cents)}
                         </td>
                         <td className="px-4 py-3 text-(--sea-ink-soft)">
-                          {formatMoney(item.line_subtotal_cents)}
+                          {formatMoneyFromCents(item.line_subtotal_cents)}
                         </td>
                       </tr>
                     ))}
@@ -201,19 +195,19 @@ function OrderDetailPage() {
               <div className="space-y-2 border-t border-(--line) pt-4 text-sm">
                 <div className="flex items-center justify-between">
                   <span className="text-(--sea-ink-soft)">Subtotal</span>
-                  <span>{formatMoney(orderQuery.data.subtotal_cents)}</span>
+                  <span>{formatMoneyFromCents(orderQuery.data.subtotal_cents)}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-(--sea-ink-soft)">Tax</span>
-                  <span>{formatMoney(orderQuery.data.tax_cents)}</span>
+                  <span>{formatMoneyFromCents(orderQuery.data.tax_cents)}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-(--sea-ink-soft)">Shipping</span>
-                  <span>{formatMoney(orderQuery.data.shipping_cents)}</span>
+                  <span>{formatMoneyFromCents(orderQuery.data.shipping_cents)}</span>
                 </div>
                 <div className="flex items-center justify-between font-semibold">
                   <span>Total</span>
-                  <span>{formatMoney(orderQuery.data.total_cents)}</span>
+                  <span>{formatMoneyFromCents(orderQuery.data.total_cents)}</span>
                 </div>
               </div>
             </CardContent>

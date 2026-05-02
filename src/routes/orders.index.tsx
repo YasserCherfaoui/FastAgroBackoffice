@@ -9,6 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from "#/components/ui/card"
+import { formatMoneyFromCents } from "#/lib/format-dzd"
 import { fetchOrders } from "#/lib/api"
 import { redirectIfUnauthenticated } from "#/lib/require-auth"
 
@@ -19,13 +20,6 @@ export const Route = createFileRoute("/orders/")({
   },
   component: OrdersPage,
 })
-
-function formatMoney(cents: number) {
-  return new Intl.NumberFormat(undefined, {
-    style: "currency",
-    currency: "USD",
-  }).format(cents / 100)
-}
 
 function OrdersPage() {
   const [page, setPage] = useState(1)
@@ -130,7 +124,7 @@ function OrdersPage() {
                         {order.items?.length ?? 0}
                       </td>
                       <td className="px-4 py-3 text-(--sea-ink-soft)">
-                        {formatMoney(order.total_cents)}
+                        {formatMoneyFromCents(order.total_cents)}
                       </td>
                       <td className="px-4 py-3 text-right">
                         <Link

@@ -8,6 +8,8 @@ import {
 } from "@tanstack/react-table"
 import { useEffect, useMemo, useState } from "react"
 
+import { useDebouncedValue } from "#/lib/use-debounced-value"
+
 import { Button } from "#/components/ui/button"
 import {
   Card,
@@ -50,15 +52,6 @@ export const Route = createFileRoute("/logistics/")({
   },
   component: LogisticsPage,
 })
-
-function useDebouncedValue<T>(value: T, ms: number): T {
-  const [debounced, setDebounced] = useState(value)
-  useEffect(() => {
-    const t = setTimeout(() => setDebounced(value), ms)
-    return () => clearTimeout(t)
-  }, [value, ms])
-  return debounced
-}
 
 function centsToDisplayDa(cents: number | null | undefined): string {
   if (cents == null || cents === undefined) return ""

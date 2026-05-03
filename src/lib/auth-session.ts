@@ -67,9 +67,36 @@ export function normalizeStoredUser(parsed: unknown): StoredUser | null {
   }
 }
 
+/** Decode JWT payload `exp` (seconds since epoch). Returns null if missing or invalid. */
+function jwtExpiresAtSeconds(token: string): number | null {
+  const parts = token.split(".")
+  if (parts.length !== 3) return null
+  try {
+    const b64 = parts[1].replace(/-/g, "+").replace(/_/g, "/")
+    const padded = b64 + "=".repeat((4 - (b64.length % 4)) % 4)
+    const json = atob(padded)
+    const payload = JSON.parse(json) as { exp?: unknown }
+    return typeof payload.exp === "number" ? payload.exp : null
+  } catch {
+    return null
+  }
+}
+
+function isJwtExpired(token: string): boolean {
+  const exp = jwtExpiresAtSeconds(token)
+  if (exp == null) return true
+  return Date.now() >= exp * 1000
+}
+
 export function getAuthToken(): string | null {
   if (typeof window === "undefined") return null
-  return window.localStorage.getItem(AUTH_TOKEN_KEY)
+  const token = window.localStorage.getItem(AUTH_TOKEN_KEY)
+  if (!token) return null
+  if (isJwtExpired(token)) {
+    clearAuthSession()
+    return null
+  }
+  return token
 }
 
 export function getAuthUser(): StoredUser | null {

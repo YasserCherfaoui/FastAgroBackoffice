@@ -1,4 +1,4 @@
-import { getAuthToken, type AuthUser } from "#/lib/auth-session"
+import { clearAuthSession, getAuthToken, type AuthUser } from "#/lib/auth-session"
 
 const DEFAULT_API = "http://localhost:8180"
 
@@ -65,6 +65,34 @@ function authMultipartHeaders(): HeadersInit {
   return h
 }
 
+function requestHadAuthorization(init?: RequestInit): boolean {
+  if (!init?.headers) return false
+  try {
+    return new Headers(init.headers).has("Authorization")
+  } catch {
+    return false
+  }
+}
+
+/** Like `fetch`, but clears the session and sends to `/login` on 401 when a Bearer token was sent. */
+async function apiFetch(
+  input: RequestInfo | URL,
+  init?: RequestInit,
+): Promise<Response> {
+  const res = await fetch(input, init)
+  if (
+    res.status === 401 &&
+    typeof window !== "undefined" &&
+    requestHadAuthorization(init)
+  ) {
+    clearAuthSession()
+    if (!window.location.pathname.startsWith("/login")) {
+      window.location.assign("/login")
+    }
+  }
+  return res
+}
+
 async function readApiError(res: Response): Promise<string> {
   const data: unknown = await res.json().catch(() => ({}))
   if (
@@ -79,7 +107,7 @@ async function readApiError(res: Response): Promise<string> {
 }
 
 export async function fetchMe(): Promise<AuthUser> {
-  const res = await fetch(`${getApiBaseUrl()}/api/v1/me`, {
+  const res = await apiFetch(`${getApiBaseUrl()}/api/v1/me`, {
     headers: authJsonHeaders(),
   })
   if (!res.ok) throw new Error(await readApiError(res))
@@ -207,7 +235,7 @@ export async function fetchCategories(params?: {
     per_page: String(perPage),
   })
   if (params?.q?.trim()) searchParams.set("q", params.q.trim())
-  const res = await fetch(
+  const res = await apiFetch(
     `${getApiBaseUrl()}/api/v1/categories?${searchParams}`,
     { headers: authJsonHeaders() },
   )
@@ -216,7 +244,7 @@ export async function fetchCategories(params?: {
 }
 
 export async function fetchCategory(id: number): Promise<Category> {
-  const res = await fetch(`${getApiBaseUrl()}/api/v1/categories/${id}`, {
+  const res = await apiFetch(`${getApiBaseUrl()}/api/v1/categories/${id}`, {
     headers: authJsonHeaders(),
   })
   if (!res.ok) throw new Error(await readApiError(res))
@@ -233,7 +261,7 @@ export async function createCategory(body: {
   color_hex?: string
   parent_id?: number | null
 }): Promise<Category> {
-  const res = await fetch(`${getApiBaseUrl()}/api/v1/categories`, {
+  const res = await apiFetch(`${getApiBaseUrl()}/api/v1/categories`, {
     method: "POST",
     headers: authJsonHeaders(),
     body: JSON.stringify(body),
@@ -255,7 +283,7 @@ export async function updateCategory(
     parent_id: number | null
   },
 ): Promise<Category> {
-  const res = await fetch(`${getApiBaseUrl()}/api/v1/categories/${id}`, {
+  const res = await apiFetch(`${getApiBaseUrl()}/api/v1/categories/${id}`, {
     method: "PUT",
     headers: authJsonHeaders(),
     body: JSON.stringify(body),
@@ -265,7 +293,7 @@ export async function updateCategory(
 }
 
 export async function deleteCategory(id: number): Promise<void> {
-  const res = await fetch(`${getApiBaseUrl()}/api/v1/categories/${id}`, {
+  const res = await apiFetch(`${getApiBaseUrl()}/api/v1/categories/${id}`, {
     method: "DELETE",
     headers: authJsonHeaders(),
   })
@@ -278,7 +306,7 @@ export async function uploadCategoryImage(
 ): Promise<Category> {
   const fd = new FormData()
   fd.append("file", file)
-  const res = await fetch(
+  const res = await apiFetch(
     `${getApiBaseUrl()}/api/v1/categories/${categoryId}/images`,
     {
       method: "POST",
@@ -312,7 +340,7 @@ export async function fetchBrands(params?: {
     per_page: String(perPage),
   })
   if (params?.q?.trim()) searchParams.set("q", params.q.trim())
-  const res = await fetch(`${getApiBaseUrl()}/api/v1/brands?${searchParams}`, {
+  const res = await apiFetch(`${getApiBaseUrl()}/api/v1/brands?${searchParams}`, {
     headers: authJsonHeaders(),
   })
   if (!res.ok) throw new Error(await readApiError(res))
@@ -320,7 +348,7 @@ export async function fetchBrands(params?: {
 }
 
 export async function fetchBrand(id: number): Promise<Brand> {
-  const res = await fetch(`${getApiBaseUrl()}/api/v1/brands/${id}`, {
+  const res = await apiFetch(`${getApiBaseUrl()}/api/v1/brands/${id}`, {
     headers: authJsonHeaders(),
   })
   if (!res.ok) throw new Error(await readApiError(res))
@@ -332,7 +360,7 @@ export async function createBrand(body: {
   slug?: string
   parent_id?: number | null
 }): Promise<Brand> {
-  const res = await fetch(`${getApiBaseUrl()}/api/v1/brands`, {
+  const res = await apiFetch(`${getApiBaseUrl()}/api/v1/brands`, {
     method: "POST",
     headers: authJsonHeaders(),
     body: JSON.stringify(body),
@@ -349,7 +377,7 @@ export async function updateBrand(
     parent_id: number | null
   },
 ): Promise<Brand> {
-  const res = await fetch(`${getApiBaseUrl()}/api/v1/brands/${id}`, {
+  const res = await apiFetch(`${getApiBaseUrl()}/api/v1/brands/${id}`, {
     method: "PUT",
     headers: authJsonHeaders(),
     body: JSON.stringify(body),
@@ -359,7 +387,7 @@ export async function updateBrand(
 }
 
 export async function deleteBrand(id: number): Promise<void> {
-  const res = await fetch(`${getApiBaseUrl()}/api/v1/brands/${id}`, {
+  const res = await apiFetch(`${getApiBaseUrl()}/api/v1/brands/${id}`, {
     method: "DELETE",
     headers: authJsonHeaders(),
   })
@@ -372,7 +400,7 @@ export async function uploadBrandImage(
 ): Promise<Brand> {
   const fd = new FormData()
   fd.append("file", file)
-  const res = await fetch(`${getApiBaseUrl()}/api/v1/brands/${brandId}/images`, {
+  const res = await apiFetch(`${getApiBaseUrl()}/api/v1/brands/${brandId}/images`, {
     method: "POST",
     headers: authMultipartHeaders(),
     body: fd,
@@ -403,7 +431,7 @@ export async function fetchCarousels(params?: {
     per_page: String(perPage),
   })
   if (params?.q?.trim()) searchParams.set("q", params.q.trim())
-  const res = await fetch(
+  const res = await apiFetch(
     `${getApiBaseUrl()}/api/v1/carousels?${searchParams}`,
     { headers: authJsonHeaders() },
   )
@@ -412,7 +440,7 @@ export async function fetchCarousels(params?: {
 }
 
 export async function fetchCarousel(id: number): Promise<Carousel> {
-  const res = await fetch(`${getApiBaseUrl()}/api/v1/carousels/${id}`, {
+  const res = await apiFetch(`${getApiBaseUrl()}/api/v1/carousels/${id}`, {
     headers: authJsonHeaders(),
   })
   if (!res.ok) throw new Error(await readApiError(res))
@@ -427,7 +455,7 @@ export async function createCarousel(body: {
   sort_order?: number
   is_active?: boolean
 }): Promise<Carousel> {
-  const res = await fetch(`${getApiBaseUrl()}/api/v1/carousels`, {
+  const res = await apiFetch(`${getApiBaseUrl()}/api/v1/carousels`, {
     method: "POST",
     headers: authJsonHeaders(),
     body: JSON.stringify(body),
@@ -447,7 +475,7 @@ export async function updateCarousel(
     is_active: boolean
   },
 ): Promise<Carousel> {
-  const res = await fetch(`${getApiBaseUrl()}/api/v1/carousels/${id}`, {
+  const res = await apiFetch(`${getApiBaseUrl()}/api/v1/carousels/${id}`, {
     method: "PUT",
     headers: authJsonHeaders(),
     body: JSON.stringify(body),
@@ -457,7 +485,7 @@ export async function updateCarousel(
 }
 
 export async function deleteCarousel(id: number): Promise<void> {
-  const res = await fetch(`${getApiBaseUrl()}/api/v1/carousels/${id}`, {
+  const res = await apiFetch(`${getApiBaseUrl()}/api/v1/carousels/${id}`, {
     method: "DELETE",
     headers: authJsonHeaders(),
   })
@@ -470,7 +498,7 @@ export async function uploadCarouselImage(
 ): Promise<Carousel> {
   const fd = new FormData()
   fd.append("file", file)
-  const res = await fetch(
+  const res = await apiFetch(
     `${getApiBaseUrl()}/api/v1/carousels/${carouselId}/images`,
     {
       method: "POST",
@@ -550,7 +578,7 @@ export async function fetchProducts(params?: {
     searchParams.set("brand_id", String(params.brandId))
   }
   if (params?.q?.trim()) searchParams.set("q", params.q.trim())
-  const res = await fetch(`${getApiBaseUrl()}/api/v1/products?${searchParams}`, {
+  const res = await apiFetch(`${getApiBaseUrl()}/api/v1/products?${searchParams}`, {
     headers: authJsonHeaders(),
   })
   if (!res.ok) throw new Error(await readApiError(res))
@@ -574,7 +602,7 @@ export async function fetchAllProducts(): Promise<Product[]> {
 }
 
 export async function fetchProduct(id: number): Promise<Product> {
-  const res = await fetch(`${getApiBaseUrl()}/api/v1/products/${id}`, {
+  const res = await apiFetch(`${getApiBaseUrl()}/api/v1/products/${id}`, {
     headers: authJsonHeaders(),
   })
   if (!res.ok) throw new Error(await readApiError(res))
@@ -592,7 +620,7 @@ export async function createProduct(body: {
   brand_id?: number | null
   specifications?: Array<{ key: string; value: string }>
 }): Promise<Product> {
-  const res = await fetch(`${getApiBaseUrl()}/api/v1/products`, {
+  const res = await apiFetch(`${getApiBaseUrl()}/api/v1/products`, {
     method: "POST",
     headers: authJsonHeaders(),
     body: JSON.stringify(body),
@@ -615,7 +643,7 @@ export async function updateProduct(
     specifications?: Array<{ id?: number; key: string; value: string }>
   },
 ): Promise<Product> {
-  const res = await fetch(`${getApiBaseUrl()}/api/v1/products/${id}`, {
+  const res = await apiFetch(`${getApiBaseUrl()}/api/v1/products/${id}`, {
     method: "PUT",
     headers: authJsonHeaders(),
     body: JSON.stringify(body),
@@ -625,7 +653,7 @@ export async function updateProduct(
 }
 
 export async function deleteProduct(id: number): Promise<void> {
-  const res = await fetch(`${getApiBaseUrl()}/api/v1/products/${id}`, {
+  const res = await apiFetch(`${getApiBaseUrl()}/api/v1/products/${id}`, {
     method: "DELETE",
     headers: authJsonHeaders(),
   })
@@ -642,7 +670,7 @@ export async function uploadProductImage(
   if (options?.replaceImageId != null) {
     fd.append("replace_image_id", String(options.replaceImageId))
   }
-  const res = await fetch(
+  const res = await apiFetch(
     `${getApiBaseUrl()}/api/v1/products/${productId}/images`,
     {
       method: "POST",
@@ -668,7 +696,7 @@ export async function deleteProductImage(
   productId: number,
   imageId: number,
 ): Promise<void> {
-  const res = await fetch(
+  const res = await apiFetch(
     `${getApiBaseUrl()}/api/v1/products/${productId}/images/${imageId}`,
     {
       method: "DELETE",
@@ -681,7 +709,7 @@ export async function deleteProductImage(
 export async function fetchProductSpecifications(
   productId: number,
 ): Promise<ProductSpecification[]> {
-  const res = await fetch(
+  const res = await apiFetch(
     `${getApiBaseUrl()}/api/v1/products/${productId}/specifications`,
     {
       headers: authJsonHeaders(),
@@ -695,7 +723,7 @@ export async function createProductSpecification(
   productId: number,
   body: { key: string; value: string },
 ): Promise<ProductSpecification> {
-  const res = await fetch(
+  const res = await apiFetch(
     `${getApiBaseUrl()}/api/v1/products/${productId}/specifications`,
     {
       method: "POST",
@@ -712,7 +740,7 @@ export async function updateProductSpecification(
   specId: number,
   body: { key: string; value: string },
 ): Promise<ProductSpecification> {
-  const res = await fetch(
+  const res = await apiFetch(
     `${getApiBaseUrl()}/api/v1/products/${productId}/specifications/${specId}`,
     {
       method: "PUT",
@@ -728,7 +756,7 @@ export async function deleteProductSpecification(
   productId: number,
   specId: number,
 ): Promise<void> {
-  const res = await fetch(
+  const res = await apiFetch(
     `${getApiBaseUrl()}/api/v1/products/${productId}/specifications/${specId}`,
     {
       method: "DELETE",
@@ -810,7 +838,7 @@ export async function fetchOrders(params?: {
   })
   if (params?.status) searchParams.set('status', params.status)
   if (params?.q) searchParams.set('q', params.q)
-  const res = await fetch(`${getApiBaseUrl()}/api/v1/admin/orders?${searchParams}`, {
+  const res = await apiFetch(`${getApiBaseUrl()}/api/v1/admin/orders?${searchParams}`, {
     headers: authJsonHeaders(),
   })
   if (!res.ok) throw new Error(await readApiError(res))
@@ -818,7 +846,7 @@ export async function fetchOrders(params?: {
 }
 
 export async function fetchOrder(id: number): Promise<Order> {
-  const res = await fetch(`${getApiBaseUrl()}/api/v1/admin/orders/${id}`, {
+  const res = await apiFetch(`${getApiBaseUrl()}/api/v1/admin/orders/${id}`, {
     headers: authJsonHeaders(),
   })
   if (!res.ok) throw new Error(await readApiError(res))
@@ -829,7 +857,7 @@ export async function updateOrderStatus(
   id: number,
   status: string,
 ): Promise<Order> {
-  const res = await fetch(`${getApiBaseUrl()}/api/v1/admin/orders/${id}/status`, {
+  const res = await apiFetch(`${getApiBaseUrl()}/api/v1/admin/orders/${id}/status`, {
     method: 'PATCH',
     headers: authJsonHeaders(),
     body: JSON.stringify({ status }),
@@ -886,7 +914,7 @@ export async function fetchAdminGeoCountriesPaged(params: {
     per_page: String(params.perPage ?? 20),
   })
   if (params.q?.trim()) searchParams.set('q', params.q.trim())
-  const res = await fetch(
+  const res = await apiFetch(
     `${getApiBaseUrl()}/api/v1/admin/geo/countries?${searchParams}`,
     { headers: authJsonHeaders() },
   )
@@ -900,7 +928,7 @@ export async function createAdminGeoCountry(body: {
   sort_order?: number
   is_active?: boolean
 }): Promise<AdminCountryRow> {
-  const res = await fetch(`${getApiBaseUrl()}/api/v1/admin/geo/countries`, {
+  const res = await apiFetch(`${getApiBaseUrl()}/api/v1/admin/geo/countries`, {
     method: 'POST',
     headers: authJsonHeaders(),
     body: JSON.stringify(body),
@@ -918,7 +946,7 @@ export async function updateAdminGeoCountry(
     is_active: boolean
   },
 ): Promise<AdminCountryRow> {
-  const res = await fetch(`${getApiBaseUrl()}/api/v1/admin/geo/countries/${id}`, {
+  const res = await apiFetch(`${getApiBaseUrl()}/api/v1/admin/geo/countries/${id}`, {
     method: 'PUT',
     headers: authJsonHeaders(),
     body: JSON.stringify(body),
@@ -928,7 +956,7 @@ export async function updateAdminGeoCountry(
 }
 
 export async function deleteAdminGeoCountry(id: number): Promise<void> {
-  const res = await fetch(`${getApiBaseUrl()}/api/v1/admin/geo/countries/${id}`, {
+  const res = await apiFetch(`${getApiBaseUrl()}/api/v1/admin/geo/countries/${id}`, {
     method: 'DELETE',
     headers: authJsonHeaders(),
   })
@@ -939,7 +967,7 @@ export async function patchAdminGeoCountry(
   id: number,
   body: { is_active: boolean },
 ): Promise<AdminCountryRow> {
-  const res = await fetch(`${getApiBaseUrl()}/api/v1/admin/geo/countries/${id}`, {
+  const res = await apiFetch(`${getApiBaseUrl()}/api/v1/admin/geo/countries/${id}`, {
     method: 'PATCH',
     headers: authJsonHeaders(),
     body: JSON.stringify(body),
@@ -951,7 +979,7 @@ export async function patchAdminGeoCountry(
 export async function fetchAdminGeoStates(
   countryId: number,
 ): Promise<AdminStateRow[]> {
-  const res = await fetch(
+  const res = await apiFetch(
     `${getApiBaseUrl()}/api/v1/admin/geo/countries/${countryId}/states`,
     { headers: authJsonHeaders() },
   )
@@ -974,7 +1002,7 @@ export async function fetchAdminGeoStatesPaged(params: {
   if (params.countryId != null) {
     searchParams.set('country_id', String(params.countryId))
   }
-  const res = await fetch(
+  const res = await apiFetch(
     `${getApiBaseUrl()}/api/v1/admin/geo/states?${searchParams}`,
     { headers: authJsonHeaders() },
   )
@@ -990,7 +1018,7 @@ export async function createAdminGeoState(body: {
   is_active?: boolean
   shipping_cents?: number | null
 }): Promise<AdminStateRow> {
-  const res = await fetch(`${getApiBaseUrl()}/api/v1/admin/geo/states`, {
+  const res = await apiFetch(`${getApiBaseUrl()}/api/v1/admin/geo/states`, {
     method: 'POST',
     headers: authJsonHeaders(),
     body: JSON.stringify(body),
@@ -1021,7 +1049,7 @@ export async function updateAdminGeoState(
     payload.shipping_cents =
       body.shipping_cents === null ? null : body.shipping_cents
   }
-  const res = await fetch(`${getApiBaseUrl()}/api/v1/admin/geo/states/${id}`, {
+  const res = await apiFetch(`${getApiBaseUrl()}/api/v1/admin/geo/states/${id}`, {
     method: 'PUT',
     headers: authJsonHeaders(),
     body: JSON.stringify(payload),
@@ -1031,7 +1059,7 @@ export async function updateAdminGeoState(
 }
 
 export async function deleteAdminGeoState(id: number): Promise<void> {
-  const res = await fetch(`${getApiBaseUrl()}/api/v1/admin/geo/states/${id}`, {
+  const res = await apiFetch(`${getApiBaseUrl()}/api/v1/admin/geo/states/${id}`, {
     method: 'DELETE',
     headers: authJsonHeaders(),
   })
@@ -1042,7 +1070,7 @@ export async function patchAdminGeoState(
   id: number,
   body: { is_active: boolean },
 ): Promise<AdminStateRow> {
-  const res = await fetch(`${getApiBaseUrl()}/api/v1/admin/geo/states/${id}`, {
+  const res = await apiFetch(`${getApiBaseUrl()}/api/v1/admin/geo/states/${id}`, {
     method: 'PATCH',
     headers: authJsonHeaders(),
     body: JSON.stringify(body),
@@ -1064,7 +1092,7 @@ export type OrderNotificationRecipientsResponse = {
 }
 
 export async function fetchOrderNotificationRecipients(): Promise<OrderNotificationRecipientsResponse> {
-  const res = await fetch(
+  const res = await apiFetch(
     `${getApiBaseUrl()}/api/v1/admin/order-notification-recipients`,
     { headers: authJsonHeaders() },
   )
@@ -1075,7 +1103,7 @@ export async function fetchOrderNotificationRecipients(): Promise<OrderNotificat
 export async function createOrderNotificationRecipient(body: {
   email: string
 }): Promise<OrderNotificationRecipient> {
-  const res = await fetch(
+  const res = await apiFetch(
     `${getApiBaseUrl()}/api/v1/admin/order-notification-recipients`,
     {
       method: "POST",
@@ -1090,7 +1118,7 @@ export async function createOrderNotificationRecipient(body: {
 export async function deleteOrderNotificationRecipient(
   id: number,
 ): Promise<void> {
-  const res = await fetch(
+  const res = await apiFetch(
     `${getApiBaseUrl()}/api/v1/admin/order-notification-recipients/${id}`,
     {
       method: "DELETE",
@@ -1104,7 +1132,7 @@ export async function putAdminGeoDeliveryRate(
   stateId: number,
   shippingCents: number,
 ): Promise<AdminStateRow> {
-  const res = await fetch(
+  const res = await apiFetch(
     `${getApiBaseUrl()}/api/v1/admin/geo/states/${stateId}/delivery-rate`,
     {
       method: 'PUT',

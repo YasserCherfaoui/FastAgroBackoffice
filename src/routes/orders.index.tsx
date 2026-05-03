@@ -25,10 +25,25 @@ function OrdersPage() {
   const [page, setPage] = useState(1)
   const [status, setStatus] = useState("")
   const [query, setQuery] = useState("")
+  const [customerKind, setCustomerKind] = useState<"all" | "anonymous" | "registered">(
+    "all",
+  )
 
   const ordersQuery = useQuery({
-    queryKey: ["orders", page, status, query],
-    queryFn: () => fetchOrders({ page, perPage: 12, status, q: query.trim() }),
+    queryKey: ["orders", page, status, query, customerKind],
+    queryFn: () =>
+      fetchOrders({
+        page,
+        perPage: 12,
+        status,
+        q: query.trim(),
+        anonymous:
+          customerKind === "anonymous"
+            ? true
+            : customerKind === "registered"
+              ? false
+              : undefined,
+      }),
   })
 
   const items = ordersQuery.data?.items ?? []
@@ -45,7 +60,7 @@ function OrdersPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="grid gap-3 md:grid-cols-[1fr_220px]">
+          <div className="grid gap-3 md:grid-cols-[1fr_180px_180px]">
             <input
               value={query}
               onChange={(event) => {
@@ -55,6 +70,18 @@ function OrdersPage() {
               placeholder="Search order number, customer, company..."
               className="h-10 rounded-md border border-(--line) bg-(--surface) px-3 text-sm"
             />
+            <select
+              value={customerKind}
+              onChange={(event) => {
+                setCustomerKind(event.target.value as "all" | "anonymous" | "registered")
+                setPage(1)
+              }}
+              className="h-10 rounded-md border border-(--line) bg-(--surface) px-3 text-sm"
+            >
+              <option value="all">All customers</option>
+              <option value="anonymous">Anonymous only</option>
+              <option value="registered">Registered only</option>
+            </select>
             <select
               value={status}
               onChange={(event) => {
@@ -102,9 +129,16 @@ function OrdersPage() {
                   {items.map((order) => (
                     <tr key={order.id} className="border-t border-(--line)">
                       <td className="px-4 py-3">
-                        <p className="m-0 font-semibold text-(--sea-ink)">
-                          {order.order_number}
-                        </p>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="m-0 font-semibold text-(--sea-ink)">
+                            {order.order_number}
+                          </p>
+                          {order.user_id == null ? (
+                            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-900 dark:bg-amber-950/40 dark:text-amber-100">
+                              Anonymous
+                            </span>
+                          ) : null}
+                        </div>
                         <p className="m-0 mt-1 text-xs text-(--sea-ink-soft)">
                           {new Date(order.created_at).toLocaleString()}
                         </p>

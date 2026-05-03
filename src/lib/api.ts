@@ -787,7 +787,7 @@ export type OrderItem = {
 export type Order = {
   id: number
   order_number: string
-  user_id: number
+  user_id?: number | null
   user?: AuthUser | null
   customer_name: string
   company_name: string
@@ -831,6 +831,8 @@ export async function fetchOrders(params?: {
   perPage?: number
   status?: string
   q?: string
+  /** true = guest orders only, false = registered users only */
+  anonymous?: boolean
 }): Promise<PaginatedOrdersResponse> {
   const searchParams = new URLSearchParams({
     page: String(params?.page ?? 1),
@@ -838,6 +840,8 @@ export async function fetchOrders(params?: {
   })
   if (params?.status) searchParams.set('status', params.status)
   if (params?.q) searchParams.set('q', params.q)
+  if (params?.anonymous === true) searchParams.set('anonymous', 'true')
+  if (params?.anonymous === false) searchParams.set('anonymous', 'false')
   const res = await apiFetch(`${getApiBaseUrl()}/api/v1/admin/orders?${searchParams}`, {
     headers: authJsonHeaders(),
   })

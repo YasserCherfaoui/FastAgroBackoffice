@@ -79,7 +79,14 @@ function OrderDetailPage() {
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
           <Card>
             <CardHeader>
-              <CardTitle>{orderQuery.data.order_number}</CardTitle>
+              <div className="flex flex-wrap items-center gap-2">
+                <CardTitle className="m-0">{orderQuery.data.order_number}</CardTitle>
+                {orderQuery.data.user_id == null ? (
+                  <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-900 dark:bg-amber-950/40 dark:text-amber-100">
+                    Anonymous
+                  </span>
+                ) : null}
+              </div>
               <CardDescription>
                 {orderQuery.data.customer_name} · {orderQuery.data.company_name}
               </CardDescription>

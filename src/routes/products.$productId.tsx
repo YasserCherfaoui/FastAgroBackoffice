@@ -21,6 +21,7 @@ import { Textarea } from "#/components/ui/textarea"
 import { useToast } from "#/components/ui/toast"
 import {
   deleteProduct,
+  deleteProductImage,
   fetchBrands,
   fetchCategories,
   fetchProduct,
@@ -244,6 +245,47 @@ function EditProductPage() {
       )
     },
   })
+
+  const replaceImageMutation = useMutation({
+    mutationFn: ({
+      imageId,
+      file,
+    }: {
+      imageId: number
+      file: File
+    }) => uploadProductImage(id, file, { replaceImageId: imageId }),
+    onSuccess: () => {
+      showToast("success", "Image replaced.")
+      void queryClient.invalidateQueries({ queryKey: ["product", id] })
+      void queryClient.invalidateQueries({ queryKey: ["products"] })
+    },
+    onError: (err) => {
+      showToast(
+        "error",
+        err instanceof Error ? err.message : "Failed to replace image.",
+      )
+    },
+  })
+
+  const deleteImageMutation = useMutation({
+    mutationFn: (imageId: number) => deleteProductImage(id, imageId),
+    onSuccess: () => {
+      showToast("success", "Image removed.")
+      void queryClient.invalidateQueries({ queryKey: ["product", id] })
+      void queryClient.invalidateQueries({ queryKey: ["products"] })
+    },
+    onError: (err) => {
+      showToast(
+        "error",
+        err instanceof Error ? err.message : "Failed to remove image.",
+      )
+    },
+  })
+
+  const imageActionPending =
+    uploadMutation.isPending ||
+    replaceImageMutation.isPending ||
+    deleteImageMutation.isPending
 
   if (!Number.isFinite(id)) {
     return (
@@ -538,7 +580,7 @@ function EditProductPage() {
           <CardHeader>
             <CardTitle className="text-lg">Images</CardTitle>
             <CardDescription>
-              Upload one file at a time. Requires{" "}
+              Add, replace, or delete images. Upload one file at a time. Requires{" "}
               <code className="rounded bg-[var(--chip-bg)] px-1 py-0.5 text-xs">
                 GCS_BUCKET
               </code>{" "}
@@ -552,7 +594,7 @@ function EditProductPage() {
                 id="img-up"
                 type="file"
                 accept="image/*"
-                disabled={uploadMutation.isPending || productQuery.isLoading}
+                disabled={imageActionPending || productQuery.isLoading}
                 onChange={(e) => {
                   const file = e.target.files?.[0]
                   if (file) uploadMutation.mutate(file)
@@ -565,6 +607,20 @@ function EditProductPage() {
                 {uploadMutation.error instanceof Error
                   ? uploadMutation.error.message
                   : "Upload failed"}
+              </p>
+            ) : null}
+            {replaceImageMutation.isError ? (
+              <p className="text-destructive text-sm" role="alert">
+                {replaceImageMutation.error instanceof Error
+                  ? replaceImageMutation.error.message
+                  : "Replace failed"}
+              </p>
+            ) : null}
+            {deleteImageMutation.isError ? (
+              <p className="text-destructive text-sm" role="alert">
+                {deleteImageMutation.error instanceof Error
+                  ? deleteImageMutation.error.message
+                  : "Remove failed"}
               </p>
             ) : null}
             {productQuery.data?.images?.length ? (
@@ -601,6 +657,56 @@ function EditProductPage() {
                         <p className="break-all text-xs text-[var(--sea-ink-soft)]">
                           URL: {img.public_url}
                         </p>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            disabled={imageActionPending || productQuery.isLoading}
+                            onClick={() =>
+                              document
+                                .getElementById(`product-img-replace-${img.id}`)
+                                ?.click()
+                            }
+                          >
+                            Replace
+                          </Button>
+                          <input
+                            id={`product-img-replace-${img.id}`}
+                            type="file"
+                            accept="image/*"
+                            className="sr-only"
+                            disabled={imageActionPending || productQuery.isLoading}
+                            onChange={(e) => {
+                              const file = e.target.files?.[0]
+                              if (file) {
+                                replaceImageMutation.mutate({
+                                  imageId: img.id,
+                                  file,
+                                })
+                              }
+                              e.target.value = ""
+                            }}
+                          />
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="sm"
+                            disabled={imageActionPending || productQuery.isLoading}
+                            onClick={() => {
+                              if (
+                                typeof window !== "undefined" &&
+                                window.confirm(
+                                  "Remove this image from the product? The file will be deleted from storage.",
+                                )
+                              ) {
+                                deleteImageMutation.mutate(img.id)
+                              }
+                            }}
+                          >
+                            Delete
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   </li>

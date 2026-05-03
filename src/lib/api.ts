@@ -635,9 +635,13 @@ export async function deleteProduct(id: number): Promise<void> {
 export async function uploadProductImage(
   productId: number,
   file: File,
+  options?: { replaceImageId?: number },
 ): Promise<ProductImage> {
   const fd = new FormData()
   fd.append("file", file)
+  if (options?.replaceImageId != null) {
+    fd.append("replace_image_id", String(options.replaceImageId))
+  }
   const res = await fetch(
     `${getApiBaseUrl()}/api/v1/products/${productId}/images`,
     {
@@ -658,6 +662,20 @@ export async function uploadProductImage(
     throw new Error(err)
   }
   return data as ProductImage
+}
+
+export async function deleteProductImage(
+  productId: number,
+  imageId: number,
+): Promise<void> {
+  const res = await fetch(
+    `${getApiBaseUrl()}/api/v1/products/${productId}/images/${imageId}`,
+    {
+      method: "DELETE",
+      headers: authJsonHeaders(),
+    },
+  )
+  if (!res.ok) throw new Error(await readApiError(res))
 }
 
 export async function fetchProductSpecifications(

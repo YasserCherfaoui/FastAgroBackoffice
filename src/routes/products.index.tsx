@@ -100,6 +100,7 @@ function ProductsPage() {
   const [view, setView] = useState<ProductView>("table")
   const [page, setPage] = useState(1)
   const [brandFilter, setBrandFilter] = useState<string>("")
+  const [tvaFilter, setTvaFilter] = useState<string>("")
   const [searchInput, setSearchInput] = useState("")
   const searchQ = useDebouncedValue(searchInput, 320)
   const [isExporting, setIsExporting] = useState(false)
@@ -116,12 +117,18 @@ function ProductsPage() {
   })
 
   const q = useQuery({
-    queryKey: ["products", page, PAGE_SIZE, brandFilter, searchQ],
+    queryKey: ["products", page, PAGE_SIZE, brandFilter, tvaFilter, searchQ],
     queryFn: () =>
       fetchProducts({
         page,
         perPage: PAGE_SIZE,
         brandId: brandFilter === "" ? null : Number.parseInt(brandFilter, 10),
+        hasTva:
+          tvaFilter === ""
+            ? undefined
+            : tvaFilter === "with"
+              ? true
+              : false,
         q: searchQ.trim() || undefined,
       }),
   })
@@ -156,12 +163,14 @@ function ProductsPage() {
 
   function ProductMeta({
     priceCents,
+    taxRateBps,
     imageCount,
     specificationCount,
     categoryName,
     brandName,
   }: {
     priceCents: number
+    taxRateBps: number
     imageCount: number
     specificationCount: number
     categoryName?: string | null
@@ -172,6 +181,10 @@ function ProductsPage() {
         {categoryName ? `${categoryName} · ` : null}
         {brandName ? `${brandName} · ` : null}
         {formatMoneyFromCents(priceCents)}
+        {` · TVA ${(Math.max(0, taxRateBps) / 100).toLocaleString("fr-FR", {
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 2,
+        })}%`}
         {imageCount ? ` · ${imageCount} image(s)` : null}
         {specificationCount ? ` · ${specificationCount} spec(s)` : null}
       </p>
@@ -197,6 +210,7 @@ function ProductsPage() {
               </Link>
               <ProductMeta
                 priceCents={p.price_cents}
+                taxRateBps={p.tax_rate_bps ?? 0}
                 imageCount={p.images?.length ?? 0}
                 specificationCount={p.specifications?.length ?? 0}
                 categoryName={p.category?.name}
@@ -235,6 +249,7 @@ function ProductsPage() {
                   </Link>
                   <ProductMeta
                     priceCents={p.price_cents}
+                    taxRateBps={p.tax_rate_bps ?? 0}
                     imageCount={p.images?.length ?? 0}
                     specificationCount={p.specifications?.length ?? 0}
                     categoryName={p.category?.name}
@@ -265,6 +280,7 @@ function ProductsPage() {
               <th className="px-4 py-3 font-medium">Category</th>
               <th className="px-4 py-3 font-medium">Brand</th>
               <th className="px-4 py-3 font-medium">Price</th>
+              <th className="px-4 py-3 font-medium">TVA</th>
               <th className="px-4 py-3 font-medium">Images</th>
               <th className="px-4 py-3 font-medium">Specs</th>
               <th className="px-4 py-3 text-right font-medium">Actions</th>
@@ -290,6 +306,13 @@ function ProductsPage() {
                 </td>
                 <td className="text-(--sea-ink-soft) px-4 py-3">
                   {formatMoneyFromCents(p.price_cents)}
+                </td>
+                <td className="text-(--sea-ink-soft) px-4 py-3">
+                  {(Math.max(0, p.tax_rate_bps ?? 0) / 100).toLocaleString(
+                    "fr-FR",
+                    { minimumFractionDigits: 0, maximumFractionDigits: 2 },
+                  )}
+                  %
                 </td>
                 <td className="text-(--sea-ink-soft) px-4 py-3">
                   {p.images?.[0]?.public_url ? (
@@ -416,6 +439,25 @@ function ProductsPage() {
                       {b.name}
                     </option>
                   ))}
+                </select>
+                <label
+                  htmlFor="products-tva-filter"
+                  className="text-(--sea-ink-soft) ml-2 text-xs font-medium"
+                >
+                  TVA
+                </label>
+                <select
+                  id="products-tva-filter"
+                  className="border-input bg-background ring-offset-background focus-visible:ring-ring flex h-9 rounded-md border px-3 py-1 text-sm shadow-xs outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50"
+                  value={tvaFilter}
+                  onChange={(e) => {
+                    setTvaFilter(e.target.value)
+                    setPage(1)
+                  }}
+                >
+                  <option value="">All</option>
+                  <option value="with">TVA &gt; 0%</option>
+                  <option value="without">TVA = 0%</option>
                 </select>
               </div>
               <div

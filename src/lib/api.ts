@@ -566,6 +566,7 @@ export async function fetchProducts(params?: {
   page?: number
   perPage?: number
   brandId?: number | null
+  hasTva?: boolean
   q?: string
 }): Promise<PaginatedProductsResponse> {
   const page = params?.page ?? 1
@@ -576,6 +577,9 @@ export async function fetchProducts(params?: {
   })
   if (params?.brandId != null) {
     searchParams.set("brand_id", String(params.brandId))
+  }
+  if (params?.hasTva != null) {
+    searchParams.set("has_tva", params.hasTva ? "true" : "false")
   }
   if (params?.q?.trim()) searchParams.set("q", params.q.trim())
   const res = await apiFetch(`${getApiBaseUrl()}/api/v1/products?${searchParams}`, {
@@ -780,6 +784,8 @@ export type OrderItem = {
   unit_weight_kg: number
   unit_price_cents: number
   line_subtotal_cents: number
+  tax_rate_bps: number
+  line_tax_cents: number
   created_at: string
   updated_at: string
 }

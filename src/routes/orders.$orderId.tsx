@@ -131,6 +131,7 @@ function OrderDetailPage() {
                       <th className="px-4 py-3 font-medium">Tier</th>
                       <th className="px-4 py-3 font-medium">Quantity</th>
                       <th className="px-4 py-3 font-medium">Unit price</th>
+                      <th className="px-4 py-3 font-medium">Tax</th>
                       <th className="px-4 py-3 font-medium">Line total</th>
                     </tr>
                   </thead>
@@ -151,6 +152,11 @@ function OrderDetailPage() {
                         </td>
                         <td className="px-4 py-3 text-(--sea-ink-soft)">
                           {formatMoneyFromCents(item.unit_price_cents)}
+                        </td>
+                        <td className="px-4 py-3 text-(--sea-ink-soft)">
+                          {item.tax_rate_bps > 0
+                            ? formatMoneyFromCents(item.line_tax_cents)
+                            : "—"}
                         </td>
                         <td className="px-4 py-3 text-(--sea-ink-soft)">
                           {formatMoneyFromCents(item.line_subtotal_cents)}

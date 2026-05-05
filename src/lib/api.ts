@@ -908,6 +908,10 @@ export type AdminStatesListResponse = {
   pagination: GeoListPagination
 }
 
+export type MinimumOrderSettingsResponse = {
+  minimum_order_cents: number
+}
+
 export async function fetchAdminGeoCountriesPaged(params: {
   page?: number
   perPage?: number
@@ -1012,6 +1016,30 @@ export async function fetchAdminGeoStatesPaged(params: {
   )
   if (!res.ok) throw new Error(await readApiError(res))
   return res.json() as Promise<AdminStatesListResponse>
+}
+
+export async function fetchAdminMinimumOrderSettings(): Promise<MinimumOrderSettingsResponse> {
+  const res = await apiFetch(
+    `${getApiBaseUrl()}/api/v1/admin/settings/minimum-order`,
+    { headers: authJsonHeaders() },
+  )
+  if (!res.ok) throw new Error(await readApiError(res))
+  return res.json() as Promise<MinimumOrderSettingsResponse>
+}
+
+export async function updateAdminMinimumOrderSettings(
+  minimumOrderCents: number,
+): Promise<MinimumOrderSettingsResponse> {
+  const res = await apiFetch(
+    `${getApiBaseUrl()}/api/v1/admin/settings/minimum-order`,
+    {
+      method: "PUT",
+      headers: authJsonHeaders(),
+      body: JSON.stringify({ minimum_order_cents: minimumOrderCents }),
+    },
+  )
+  if (!res.ok) throw new Error(await readApiError(res))
+  return res.json() as Promise<MinimumOrderSettingsResponse>
 }
 
 export async function createAdminGeoState(body: {

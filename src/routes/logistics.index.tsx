@@ -34,12 +34,14 @@ import {
   deleteAdminGeoCountry,
   deleteAdminGeoState,
   fetchAdminGeoCountriesPaged,
+  fetchAdminMinimumOrderSettings,
   fetchAdminGeoStatesPaged,
   patchAdminGeoCountry,
   patchAdminGeoState,
   putAdminGeoDeliveryRate,
   updateAdminGeoCountry,
   updateAdminGeoState,
+  updateAdminMinimumOrderSettings,
   type AdminCountryRow,
   type AdminStateRow,
 } from "#/lib/api"
@@ -222,6 +224,18 @@ function LogisticsPage() {
     },
   })
 
+  const minimumOrderQ = useQuery({
+    queryKey: ["admin", "settings", "minimum-order"],
+    queryFn: fetchAdminMinimumOrderSettings,
+  })
+
+  const updateMinimumOrder = useMutation({
+    mutationFn: updateAdminMinimumOrderSettings,
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ["admin", "settings", "minimum-order"] })
+    },
+  })
+
   const countryColumns = useMemo<ColumnDef<AdminCountryRow>[]>(
     () => [
       { accessorKey: "code", header: "Code" },
@@ -400,6 +414,37 @@ function LogisticsPage() {
             centimes).
           </p>
         </div>
+
+        <Card className="border-(--line) bg-(--surface-strong)">
+          <CardHeader>
+            <CardTitle className="text-lg">Order settings</CardTitle>
+            <CardDescription className="text-(--sea-ink-soft)">
+              Configure the global minimum order amount based on subtotal only.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <MinimumOrderSettingsForm
+              initialCents={minimumOrderQ.data?.minimum_order_cents ?? 0}
+              loading={minimumOrderQ.isLoading}
+              disabled={minimumOrderQ.isLoading || updateMinimumOrder.isPending}
+              error={
+                minimumOrderQ.isError
+                  ? minimumOrderQ.error instanceof Error
+                    ? minimumOrderQ.error.message
+                    : "Failed to load setting"
+                  : undefined
+              }
+              submitError={
+                updateMinimumOrder.isError
+                  ? updateMinimumOrder.error instanceof Error
+                    ? updateMinimumOrder.error.message
+                    : "Failed to save setting"
+                  : undefined
+              }
+              onSubmit={(cents) => updateMinimumOrder.mutate(cents)}
+            />
+          </CardContent>
+        </Card>
 
         <Card className="border-(--line) bg-(--surface-strong)">
           <CardHeader>
@@ -699,6 +744,68 @@ function LogisticsPage() {
         </Card>
       </div>
     </main>
+  )
+}
+
+function MinimumOrderSettingsForm({
+  initialCents,
+  loading,
+  disabled,
+  error,
+  submitError,
+  onSubmit,
+}: {
+  initialCents: number
+  loading: boolean
+  disabled: boolean
+  error?: string
+  submitError?: string
+  onSubmit: (minimumOrderCents: number) => void
+}) {
+  const [da, setDa] = useState(centsToDisplayDa(initialCents))
+  useEffect(() => {
+    setDa(centsToDisplayDa(initialCents))
+  }, [initialCents])
+
+  return (
+    <div className="rounded-lg border border-(--line) bg-(--surface) p-4">
+      <div className="grid gap-3 sm:grid-cols-[minmax(180px,280px)_auto] sm:items-end">
+        <div className="flex flex-col gap-1">
+          <Label htmlFor="minimum-order-da">Minimum subtotal (DA)</Label>
+          <Input
+            id="minimum-order-da"
+            value={da}
+            onChange={(e) => setDa(e.target.value)}
+            disabled={disabled}
+            inputMode="decimal"
+            placeholder="0"
+          />
+        </div>
+        <Button
+          type="button"
+          className="sm:w-fit"
+          disabled={disabled}
+          onClick={() => {
+            const cents = parseDaToCents(da)
+            if (cents < 0) return
+            onSubmit(cents)
+          }}
+        >
+          Save minimum
+        </Button>
+      </div>
+      {loading ? <p className="text-(--sea-ink-soft) mt-3 text-sm">Loading…</p> : null}
+      {error ? (
+        <p className="text-destructive mt-3 text-sm" role="alert">
+          {error}
+        </p>
+      ) : null}
+      {submitError ? (
+        <p className="text-destructive mt-3 text-sm" role="alert">
+          {submitError}
+        </p>
+      ) : null}
+    </div>
   )
 }
 

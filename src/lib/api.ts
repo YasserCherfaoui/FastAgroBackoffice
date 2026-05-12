@@ -541,6 +541,7 @@ export type Product = {
   tax_rate_bps?: number
   weight_kg?: number
   best_seller: boolean
+  out_of_stock: boolean
   category_id?: number | null
   category?: Category | null
   brand_id?: number | null
@@ -620,6 +621,7 @@ export async function createProduct(body: {
   tax_rate_bps?: number
   weight_kg: number
   best_seller?: boolean
+  out_of_stock?: boolean
   category_id?: number | null
   brand_id?: number | null
   specifications?: Array<{ key: string; value: string }>
@@ -642,6 +644,7 @@ export async function updateProduct(
     tax_rate_bps: number
     weight_kg: number
     best_seller: boolean
+    out_of_stock: boolean
     category_id: number | null
     brand_id: number | null
     specifications?: Array<{ id?: number; key: string; value: string }>

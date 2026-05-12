@@ -51,6 +51,7 @@ const schema = z.object({
   category_id: z.string(),
   brand_id: z.string(),
   best_seller: z.boolean(),
+  out_of_stock: z.boolean(),
 }).superRefine((data, ctx) => {
   const seen = new Set<string>()
   data.specifications.forEach((spec, index) => {
@@ -117,6 +118,7 @@ function NewProductPage() {
       category_id: "",
       brand_id: "",
       best_seller: false,
+      out_of_stock: false,
     },
   })
   const specsFieldArray = useFieldArray({
@@ -144,6 +146,7 @@ function NewProductPage() {
         tax_rate_bps,
         weight_kg,
         best_seller: values.best_seller,
+        out_of_stock: values.out_of_stock,
         category_id,
         brand_id,
         specifications: values.specifications.map((spec) => ({
@@ -277,6 +280,27 @@ function NewProductPage() {
                   render={({ field }) => (
                     <Switch
                       id="p-best-seller"
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  )}
+                />
+              </div>
+              <div className="flex items-center justify-between gap-3 rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 py-2">
+                <div>
+                  <Label htmlFor="p-out-of-stock" className="cursor-pointer">
+                    Out of stock
+                  </Label>
+                  <p className="mt-0.5 text-xs text-[var(--sea-ink-soft)]">
+                    Keep the product visible in the catalogue but block ordering.
+                  </p>
+                </div>
+                <Controller
+                  name="out_of_stock"
+                  control={control}
+                  render={({ field }) => (
+                    <Switch
+                      id="p-out-of-stock"
                       checked={field.value}
                       onCheckedChange={field.onChange}
                     />

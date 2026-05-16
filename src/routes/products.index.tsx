@@ -1,8 +1,9 @@
-import { useQuery } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Link, createFileRoute } from "@tanstack/react-router"
 import { useEffect, useState } from "react"
 
 import { Button } from "#/components/ui/button"
+import { useToast } from "#/components/ui/toast"
 import {
   Card,
   CardContent,
@@ -14,6 +15,7 @@ import { Input } from "#/components/ui/input"
 import { Label } from "#/components/ui/label"
 import { formatMoneyFromCents } from "#/lib/format-dzd"
 import {
+  duplicateProduct,
   fetchAllProducts,
   fetchBrands,
   fetchProducts,
@@ -97,10 +99,13 @@ function ProductImageCarousel({
 }
 
 function ProductsPage() {
+  const queryClient = useQueryClient()
+  const { showToast } = useToast()
   const [view, setView] = useState<ProductView>("table")
   const [page, setPage] = useState(1)
   const [brandFilter, setBrandFilter] = useState<string>("")
   const [tvaFilter, setTvaFilter] = useState<string>("")
+  const [stockFilter, setStockFilter] = useState<string>("")
   const [searchInput, setSearchInput] = useState("")
   const searchQ = useDebouncedValue(searchInput, 320)
   const [isExporting, setIsExporting] = useState(false)
@@ -117,7 +122,7 @@ function ProductsPage() {
   })
 
   const q = useQuery({
-    queryKey: ["products", page, PAGE_SIZE, brandFilter, tvaFilter, searchQ],
+    queryKey: ["products", page, PAGE_SIZE, brandFilter, tvaFilter, stockFilter, searchQ],
     queryFn: () =>
       fetchProducts({
         page,
@@ -129,6 +134,12 @@ function ProductsPage() {
             : tvaFilter === "with"
               ? true
               : false,
+        outOfStock:
+          stockFilter === ""
+            ? undefined
+            : stockFilter === "out"
+              ? true
+              : false,
         q: searchQ.trim() || undefined,
       }),
   })
@@ -136,6 +147,43 @@ function ProductsPage() {
   const pagination = q.data?.pagination
   const totalItems = pagination?.total_items ?? 0
   const totalPages = pagination?.total_pages ?? 1
+
+  const duplicateMutation = useMutation({
+    mutationFn: duplicateProduct,
+    onSuccess: (product) => {
+      showToast("success", `Duplicated as “${product.name}”.`)
+      void queryClient.invalidateQueries({ queryKey: ["products"] })
+    },
+    onError: (err) => {
+      showToast(
+        "error",
+        err instanceof Error ? err.message : "Failed to duplicate product.",
+      )
+    },
+  })
+
+  function ProductActions({ productId }: { productId: number }) {
+    const isDuplicating =
+      duplicateMutation.isPending && duplicateMutation.variables === productId
+    return (
+      <div className="flex flex-wrap items-center justify-end gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={isDuplicating}
+          onClick={() => duplicateMutation.mutate(productId)}
+        >
+          {isDuplicating ? "Duplicating…" : "Duplicate"}
+        </Button>
+        <Button asChild variant="outline" size="sm">
+          <Link to="/products/$productId" params={{ productId: String(productId) }}>
+            Edit
+          </Link>
+        </Button>
+      </div>
+    )
+  }
 
   async function handleExportCsv() {
     if (!storefrontBase) return
@@ -217,11 +265,7 @@ function ProductsPage() {
                 brandName={p.brand?.name}
               />
               <div className="mt-3">
-                <Button asChild variant="outline" size="sm">
-                  <Link to="/products/$productId" params={{ productId: String(p.id) }}>
-                    Edit
-                  </Link>
-                </Button>
+                <ProductActions productId={p.id} />
               </div>
             </li>
           ))}
@@ -257,14 +301,7 @@ function ProductsPage() {
                   />
                 </div>
               </div>
-              <Button asChild variant="outline" size="sm">
-                <Link
-                  to="/products/$productId"
-                  params={{ productId: String(p.id) }}
-                >
-                  Edit
-                </Link>
-              </Button>
+              <ProductActions productId={p.id} />
             </li>
           ))}
         </ul>
@@ -330,11 +367,7 @@ function ProductsPage() {
                   {p.specifications?.length ?? 0}
                 </td>
                 <td className="px-4 py-3 text-right">
-                  <Button asChild variant="outline" size="sm">
-                    <Link to="/products/$productId" params={{ productId: String(p.id) }}>
-                      Edit
-                    </Link>
-                  </Button>
+                  <ProductActions productId={p.id} />
                 </td>
               </tr>
             ))}
@@ -458,6 +491,25 @@ function ProductsPage() {
                   <option value="">All</option>
                   <option value="with">TVA &gt; 0%</option>
                   <option value="without">TVA = 0%</option>
+                </select>
+                <label
+                  htmlFor="products-stock-filter"
+                  className="text-(--sea-ink-soft) ml-2 text-xs font-medium"
+                >
+                  Stock
+                </label>
+                <select
+                  id="products-stock-filter"
+                  className="border-input bg-background ring-offset-background focus-visible:ring-ring flex h-9 rounded-md border px-3 py-1 text-sm shadow-xs outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50"
+                  value={stockFilter}
+                  onChange={(e) => {
+                    setStockFilter(e.target.value)
+                    setPage(1)
+                  }}
+                >
+                  <option value="">All</option>
+                  <option value="out">Out of stock</option>
+                  <option value="in">In stock</option>
                 </select>
               </div>
               <div

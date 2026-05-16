@@ -568,6 +568,7 @@ export async function fetchProducts(params?: {
   perPage?: number
   brandId?: number | null
   hasTva?: boolean
+  outOfStock?: boolean
   q?: string
 }): Promise<PaginatedProductsResponse> {
   const page = params?.page ?? 1
@@ -581,6 +582,9 @@ export async function fetchProducts(params?: {
   }
   if (params?.hasTva != null) {
     searchParams.set("has_tva", params.hasTva ? "true" : "false")
+  }
+  if (params?.outOfStock != null) {
+    searchParams.set("out_of_stock", params.outOfStock ? "true" : "false")
   }
   if (params?.q?.trim()) searchParams.set("q", params.q.trim())
   const res = await apiFetch(`${getApiBaseUrl()}/api/v1/products?${searchParams}`, {
@@ -665,6 +669,15 @@ export async function deleteProduct(id: number): Promise<void> {
     headers: authJsonHeaders(),
   })
   if (!res.ok) throw new Error(await readApiError(res))
+}
+
+export async function duplicateProduct(id: number): Promise<Product> {
+  const res = await apiFetch(`${getApiBaseUrl()}/api/v1/products/${id}/duplicate`, {
+    method: "POST",
+    headers: authJsonHeaders(),
+  })
+  if (!res.ok) throw new Error(await readApiError(res))
+  return res.json() as Promise<Product>
 }
 
 export async function uploadProductImage(
